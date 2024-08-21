@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+    See also https://github.com/spring-projects/spring-boot/releases/
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.brinvex.fintracker</groupId>
+    <artifactId>brinvex-fintracker</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>brinvex-fintracker</name>
+    <description>
+        Brinvex FinTracker is a financial tool focused on investment tracking offering detailed insights into investment portfolios.
+        It is capable of interacting with various banks and brokers.
+        Designed as both an application for end-users and a library for integration into other systems,
+        it provides flexible and scalable solutions for financial tracking.
+    </description>
+    <organization>
+        <name>Brinvex</name>
+        <url>https://brinvex.com</url>
+    </organization>
+    <modules>
+        <module>brinvex-fintracker-api</module>
+        <module>brinvex-fintracker-common-impl</module>
+        <module>brinvex-fintracker-common-test</module>
+        <module>brinvex-fintracker-connector</module>
+    </modules>
+    <url>https://github.com/brinvex/brinvex-fintracker</url>
+    <inceptionYear>2024</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Lukas</name>
+            <email>dev@brinvex.com</email>
+            <organization>Brinvex</organization>
+            <organizationUrl>https://brinvex.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <properties>
+        <java.version>22</java.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
+        <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
+
+        <brinvex-util-dms.version>1.0.7</brinvex-util-dms.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-common-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.brinvex.util</groupId>
+                <artifactId>brinvex-util-dms-api</artifactId>
+                <version>${brinvex-util-dms.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.util</groupId>
+                <artifactId>brinvex-util-dms-impl</artifactId>
+                <version>${brinvex-util-dms.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>
