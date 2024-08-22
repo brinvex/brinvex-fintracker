@@ -1,0 +1,21 @@
+package com.brinvex.fintracker.connector.ibkr.api.service;
+
+import com.brinvex.fintracker.api.domain.FinTransaction;
+import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
+import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
+import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;
+import com.brinvex.fintracker.connector.ibkr.api.model.statement.TradeConfirm;
+
+import java.util.List;
+
+public interface IbkrTransactionMapper {
+
+    List<FinTransaction> mapCashTransactions(List<CashTransaction> cashTrans);
+
+    List<FinTransaction> mapTrades(List<Trade> trades);
+
+    List<FinTransaction> mapCorporateAction(List<CorporateAction> corpActions);
+
+    List<FinTransaction> mapTradeConfirms(List<TradeConfirm> tradeConfirms);
+
+}

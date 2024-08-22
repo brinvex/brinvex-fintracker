@@ -1,6 +1,5 @@
-package com.brinvex.fintracker.api;
+package com.brinvex.fintracker.common.impl;
 
-import com.brinvex.fintracker.api.exception.DataException;
 import com.brinvex.fintracker.api.util.Regex;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -8,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class RegexTest {
 
@@ -75,12 +73,5 @@ public class RegexTest {
         assertFalse(Regex.CCY.matches("abc", Regex.Tolerance.NULL_OK));
         assertFalse(Regex.CCY.matches("abc", Regex.Tolerance.EMPTY_OK));
         assertFalse(Regex.CCY.matches("abc", Regex.Tolerance.BLANK_OK));
-
-        try {
-            Regex.CCY.validate("123");
-            fail();
-        } catch (DataException de) {
-            LOG.debug("Caught expected exception: {}", de.getMessage());
-        }
     }
 }

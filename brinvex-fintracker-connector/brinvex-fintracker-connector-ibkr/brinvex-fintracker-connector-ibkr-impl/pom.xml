@@ -16,6 +16,10 @@
             <groupId>com.brinvex.fintracker</groupId>
             <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-common-impl</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.brinvex.util</groupId>

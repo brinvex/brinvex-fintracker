@@ -11,4 +11,16 @@
 
     <artifactId>brinvex-fintracker-common-impl</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-common-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

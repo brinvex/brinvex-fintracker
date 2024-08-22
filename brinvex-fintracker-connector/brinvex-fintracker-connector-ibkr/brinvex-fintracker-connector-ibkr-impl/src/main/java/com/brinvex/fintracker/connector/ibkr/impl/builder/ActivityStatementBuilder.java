@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
-import com.brinvex.fintracker.api.util.Validate;
+import com.brinvex.fintracker.common.impl.Validate;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;

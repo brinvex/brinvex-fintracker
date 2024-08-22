@@ -77,17 +77,22 @@
             </dependency>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-common-impl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-common-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
                 <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
                 <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-common-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
