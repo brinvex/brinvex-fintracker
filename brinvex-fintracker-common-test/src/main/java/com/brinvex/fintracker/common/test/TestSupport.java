@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.testsupport;
+package com.brinvex.fintracker.common.test;
 
 import com.brinvex.util.dms.api.DmsFactory;
 import org.slf4j.Logger;

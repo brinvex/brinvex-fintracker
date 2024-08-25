@@ -21,14 +21,10 @@
             <artifactId>brinvex-fintracker-common-impl</artifactId>
         </dependency>
 
+
         <dependency>
             <groupId>com.brinvex.util</groupId>
-            <artifactId>brinvex-util-dms-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.brinvex.util</groupId>
-            <artifactId>brinvex-util-dms-impl</artifactId>
-            <scope>runtime</scope>
+            <artifactId>brinvex-util-java</artifactId>
         </dependency>
 
         <dependency>

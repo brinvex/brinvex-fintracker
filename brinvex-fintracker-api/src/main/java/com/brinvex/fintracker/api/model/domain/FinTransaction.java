@@ -1,13 +1,13 @@
-package com.brinvex.fintracker.api.domain;
+package com.brinvex.fintracker.api.model.domain;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record FinTransaction(
         String id,
         FinTransactionType type,
-        LocalDateTime dateTime,
+        LocalDate date,
         String ccy,
         BigDecimal netValue,
 
@@ -19,6 +19,7 @@ public record FinTransaction(
         BigDecimal tax,
         BigDecimal fee,
 
+        LocalDate settleDate,
         String groupId,
         String extraId,
         String extraType,

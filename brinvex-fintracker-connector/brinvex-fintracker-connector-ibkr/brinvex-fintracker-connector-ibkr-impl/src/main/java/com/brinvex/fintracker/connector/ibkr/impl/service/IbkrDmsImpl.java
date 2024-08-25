@@ -39,7 +39,7 @@ public class IbkrDmsImpl implements IbkrDms {
     }
 
     @Override
-    public List<ActivityDocKey> getActivityDocKeys(String accountId, LocalDate fromDayIncl, LocalDate toDayIncl) {
+    public List<ActivityDocKey> getActivityDocKeys(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl) {
         String directory = getDirectory(accountId);
         SequencedCollection<String> fileKeys = dms.getKeys(directory);
         List<ActivityDocKey> results = new ArrayList<>();
@@ -51,13 +51,13 @@ public class IbkrDmsImpl implements IbkrDms {
                 if (!docAccountId.equals(accountId)) {
                     throw new StorageException("Unexpected document '%s' in directory '%s'".formatted(fileKey, directory));
                 }
-                LocalDate docFromDayIncl = LocalDate.parse(m.group(2), Lazy.dmsDocDf);
-                LocalDate docToDayIncl = LocalDate.parse(m.group(3), Lazy.dmsDocDf);
-                boolean outside = (toDayIncl != null && docFromDayIncl.isAfter(toDayIncl)) || (fromDayIncl != null && docToDayIncl.isBefore(fromDayIncl));
+                LocalDate docFromDateIncl = LocalDate.parse(m.group(2), Lazy.dmsDocDf);
+                LocalDate docToDateIncl = LocalDate.parse(m.group(3), Lazy.dmsDocDf);
+                boolean outside = (toDateIncl != null && docFromDateIncl.isAfter(toDateIncl)) || (fromDateIncl != null && docToDateIncl.isBefore(fromDateIncl));
                 if (outside) {
                     continue;
                 }
-                results.add(new ActivityDocKey(docAccountId, docFromDayIncl, docToDayIncl));
+                results.add(new ActivityDocKey(docAccountId, docFromDateIncl, docToDateIncl));
             }
         }
         results.sort(naturalOrder());
@@ -65,7 +65,7 @@ public class IbkrDmsImpl implements IbkrDms {
     }
 
     @Override
-    public List<TradeConfirmDocKey> getTradeConfirmDocKeys(String accountId, LocalDate fromDayIncl, LocalDate toDayIncl) {
+    public List<TradeConfirmDocKey> getTradeConfirmDocKeys(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl) {
         String directory = getDirectory(accountId);
         SequencedCollection<String> fileKeys = dms.getKeys(directory);
         List<TradeConfirmDocKey> results = new ArrayList<>();
@@ -77,13 +77,13 @@ public class IbkrDmsImpl implements IbkrDms {
                 if (!docAccountId.equals(accountId)) {
                     throw new StorageException("Unexpected document '%s' in directory '%s'".formatted(fileKey, directory));
                 }
-                LocalDate docDay = LocalDate.parse(m.group(2), Lazy.dmsDocDf);
-                boolean outside = (toDayIncl != null && docDay.isAfter(toDayIncl)) || (fromDayIncl != null && docDay.isBefore(fromDayIncl));
+                LocalDate docDate = LocalDate.parse(m.group(2), Lazy.dmsDocDf);
+                boolean outside = (toDateIncl != null && docDate.isAfter(toDateIncl)) || (fromDateIncl != null && docDate.isBefore(fromDateIncl));
                 if (outside) {
                     continue;
                 }
                 LocalTime docTime = LocalTime.parse(m.group(3), Lazy.dmsDocTf);
-                results.add(new TradeConfirmDocKey(docAccountId, docDay, docTime));
+                results.add(new TradeConfirmDocKey(docAccountId, docDate, docTime));
             }
         }
         results.sort(naturalOrder());
@@ -116,7 +116,7 @@ public class IbkrDmsImpl implements IbkrDms {
         String accountId = docKey.accountId();
         String directory = getDirectory(accountId);
 
-        List<ActivityDocKey> oldDocKeys = getActivityDocKeys(accountId, docKey.fromDayIncl(), docKey.toDayIncl());
+        List<ActivityDocKey> oldDocKeys = getActivityDocKeys(accountId, docKey.fromDateIncl(), docKey.toDateIncl());
         String newFileKey = constructFileKey(docKey);
         List<ActivityDocKey> oldAndNewDocKeys = new ArrayList<>(oldDocKeys);
         oldAndNewDocKeys.add(docKey);
@@ -153,8 +153,8 @@ public class IbkrDmsImpl implements IbkrDms {
         return switch (docKey) {
             case ActivityDocKey actDocKey -> "%s-ACT-%s-%s.xml".formatted(
                     actDocKey.accountId(),
-                    Lazy.dmsDocDf.format(actDocKey.fromDayIncl()),
-                    Lazy.dmsDocDf.format(actDocKey.toDayIncl())
+                    Lazy.dmsDocDf.format(actDocKey.fromDateIncl()),
+                    Lazy.dmsDocDf.format(actDocKey.toDateIncl())
             );
             case TradeConfirmDocKey tcDocKey -> "%s-TC-%s-%s.xml".formatted(
                     tcDocKey.accountId(),
@@ -169,7 +169,7 @@ public class IbkrDmsImpl implements IbkrDms {
         if (size <= 1) {
             return emptySet();
         }
-        docKeys = docKeys.stream().sorted(comparing(ActivityDocKey::fromDayIncl).thenComparing(ActivityDocKey::toDayIncl)).toList();
+        docKeys = docKeys.stream().sorted(comparing(ActivityDocKey::fromDateIncl).thenComparing(ActivityDocKey::toDateIncl)).toList();
         Set<ActivityDocKey> uselessDocs = new HashSet<>();
         int prevUsefulIndex = 0;
         for (int i = 0; i < size; i++) {
@@ -177,21 +177,21 @@ public class IbkrDmsImpl implements IbkrDms {
             boolean useful;
             if (i == 0) {
                 ActivityDocKey nextKey = docKeys.get(i + 1);
-                useful = midKey.fromDayIncl().isBefore(nextKey.fromDayIncl());
+                useful = midKey.fromDateIncl().isBefore(nextKey.fromDateIncl());
             } else if (i == size - 1) {
                 ActivityDocKey prevKey = docKeys.get(prevUsefulIndex);
-                useful = midKey.toDayIncl().isAfter(prevKey.toDayIncl());
+                useful = midKey.toDateIncl().isAfter(prevKey.toDateIncl());
             } else {
                 ActivityDocKey prevKey = docKeys.get(prevUsefulIndex);
                 ActivityDocKey nextKey = docKeys.get(i + 1);
-                LocalDate prevToDayExcl = prevKey.toDayIncl().plusDays(1);
-                boolean neighborsContinuous = !prevToDayExcl.isBefore(nextKey.fromDayIncl());
+                LocalDate prevToDateExcl = prevKey.toDateIncl().plusDays(1);
+                boolean neighborsContinuous = !prevToDateExcl.isBefore(nextKey.fromDateIncl());
                 if (neighborsContinuous) {
-                    boolean inside = !midKey.fromDayIncl().isBefore(prevKey.fromDayIncl()) && !midKey.toDayIncl().isAfter(nextKey.toDayIncl());
+                    boolean inside = !midKey.fromDateIncl().isBefore(prevKey.fromDateIncl()) && !midKey.toDateIncl().isAfter(nextKey.toDateIncl());
                     useful = !inside;
                 } else {
-                    boolean insidePrev = !midKey.fromDayIncl().isBefore(prevKey.fromDayIncl()) && !midKey.toDayIncl().isAfter(prevKey.toDayIncl());
-                    boolean insideNext = !midKey.fromDayIncl().isBefore(nextKey.fromDayIncl()) && !midKey.toDayIncl().isAfter(nextKey.toDayIncl());
+                    boolean insidePrev = !midKey.fromDateIncl().isBefore(prevKey.fromDateIncl()) && !midKey.toDateIncl().isAfter(prevKey.toDateIncl());
+                    boolean insideNext = !midKey.fromDateIncl().isBefore(nextKey.fromDateIncl()) && !midKey.toDateIncl().isAfter(nextKey.toDateIncl());
                     useful = !insidePrev || !insideNext;
                 }
             }

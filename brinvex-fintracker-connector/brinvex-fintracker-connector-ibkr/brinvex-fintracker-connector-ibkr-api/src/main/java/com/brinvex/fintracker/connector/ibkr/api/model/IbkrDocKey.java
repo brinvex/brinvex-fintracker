@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
 
+import static java.util.Comparator.comparing;
+
 public sealed interface IbkrDocKey extends Serializable {
 
     String accountId();
@@ -12,14 +14,14 @@ public sealed interface IbkrDocKey extends Serializable {
     record ActivityDocKey(
             @Override
             String accountId,
-            LocalDate fromDayIncl,
-            LocalDate toDayIncl
+            LocalDate fromDateIncl,
+            LocalDate toDateIncl
     ) implements IbkrDocKey, Comparable<ActivityDocKey>, Serializable {
 
         private static final Comparator<ActivityDocKey> COMPARATOR =
-                Comparator.comparing(ActivityDocKey::accountId)
-                        .thenComparing(ActivityDocKey::fromDayIncl)
-                        .thenComparing(ActivityDocKey::toDayIncl);
+                comparing(ActivityDocKey::accountId)
+                        .thenComparing(ActivityDocKey::fromDateIncl)
+                        .thenComparing(ActivityDocKey::toDateIncl);
 
         @Override
         public int compareTo(ActivityDocKey other) {
@@ -35,7 +37,7 @@ public sealed interface IbkrDocKey extends Serializable {
     ) implements IbkrDocKey, Comparable<TradeConfirmDocKey>, Serializable {
 
         private static final Comparator<TradeConfirmDocKey> COMPARATOR =
-                Comparator.comparing(TradeConfirmDocKey::accountId)
+                comparing(TradeConfirmDocKey::accountId)
                         .thenComparing(TradeConfirmDocKey::day)
                         .thenComparing(TradeConfirmDocKey::whenGenerated);
 

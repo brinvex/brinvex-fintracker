@@ -1,7 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
@@ -37,20 +37,20 @@ public class CashTransactionBuilder {
 
 
     public CashTransaction build() {
-        Validate.notNull(reportDate);
-        Validate.matches(currency, Regex.CCY);
-        Validate.notNull(symbol);
-        Validate.notNull(description);
-        Validate.notNull(securityID);
-        Validate.notNull(figi);
-        Validate.notNull(isin);
-        Validate.notNull(listingExchange);
-        Validate.notNull(type);
-        Validate.notNullNotBlank(transactionID);
-        Validate.notNull(actionID);
-        Validate.notNull(settleDate);
-        Validate.notNull(amount);
-        Validate.notNullNotBlank(extraDateTimeStr);
+        Assert.notNull(reportDate);
+        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.notNull(symbol);
+        Assert.notNull(description);
+        Assert.notNull(securityID);
+        Assert.notNull(figi);
+        Assert.notNull(isin);
+        Assert.notNull(listingExchange);
+        Assert.notNull(type);
+        Assert.notNullNotBlank(transactionID);
+        Assert.notNull(actionID);
+        Assert.notNull(settleDate);
+        Assert.notNull(amount);
+        Assert.notNullNotBlank(extraDateTimeStr);
 
         return new CashTransaction(
                 reportDate,

@@ -1,7 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.BuySell;
@@ -51,33 +51,33 @@ public class TradeBuilder {
     private ZonedDateTime orderTime;
 
     public Trade build() {
-        Validate.matches(currency, Regex.CCY);
-        Validate.notNull(assetCategory);
-        Validate.notNullNotBlank(symbol);
-        Validate.notNullNotBlank(description);
-        Validate.notNull(securityID);
-        Validate.notNull(figi);
-        Validate.notNull(isin);
-        Validate.notNull(listingExchange);
-        Validate.notNull(tradeID);
-        Validate.notNull(reportDate);
-        Validate.notNull(tradeDate);
-        Validate.notNull(settleDateTarget);
-        Validate.notNull(transactionType);
-        Validate.notNullNotBlank(exchange);
-        Validate.notNull(quantity);
-        Validate.notNull(tradePrice);
-        Validate.notNull(tradeMoney);
-        Validate.notNull(proceeds);
-        Validate.notNull(taxes);
-        Validate.notNull(ibCommission);
-        Validate.notNull(ibCommissionCurrency);
-        Validate.notNull(netCash);
-        Validate.notNull(cost);
-        Validate.notNull(buySell);
-        Validate.notNullNotBlank(transactionID);
-        Validate.notNullNotBlank(ibOrderID);
-        Validate.notNullNotBlank(extraDateTimeStr);
+        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.notNull(assetCategory);
+        Assert.notNullNotBlank(symbol);
+        Assert.notNullNotBlank(description);
+        Assert.notNull(securityID);
+        Assert.notNull(figi);
+        Assert.notNull(isin);
+        Assert.notNull(listingExchange);
+        Assert.notNull(tradeID);
+        Assert.notNull(reportDate);
+        Assert.notNull(tradeDate);
+        Assert.notNull(settleDateTarget);
+        Assert.notNull(transactionType);
+        Assert.notNullNotBlank(exchange);
+        Assert.notNull(quantity);
+        Assert.notNull(tradePrice);
+        Assert.notNull(tradeMoney);
+        Assert.notNull(proceeds);
+        Assert.notNull(taxes);
+        Assert.notNull(ibCommission);
+        Assert.notNull(ibCommissionCurrency);
+        Assert.notNull(netCash);
+        Assert.notNull(cost);
+        Assert.notNull(buySell);
+        Assert.notNullNotBlank(transactionID);
+        Assert.notNullNotBlank(ibOrderID);
+        Assert.notNullNotBlank(extraDateTimeStr);
 
         return new Trade(
                 currency,

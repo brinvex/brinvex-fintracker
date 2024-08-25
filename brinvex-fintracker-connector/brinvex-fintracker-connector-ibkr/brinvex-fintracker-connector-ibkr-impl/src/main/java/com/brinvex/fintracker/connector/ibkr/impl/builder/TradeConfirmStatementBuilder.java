@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.TradeConfirm;
 import lombok.Setter;
@@ -21,11 +21,11 @@ public class TradeConfirmStatementBuilder {
     private Collection<TradeConfirm> tradeConfirmations;
 
     public FlexStatement.TradeConfirmStatement build() {
-        Validate.notNullNotBlank(accountId);
-        Validate.notNull(fromDate);
-        Validate.notNull(toDate);
-        Validate.notNull(whenGenerated);
-        Validate.notNull(tradeConfirmations);
+        Assert.notNullNotBlank(accountId);
+        Assert.notNull(fromDate);
+        Assert.notNull(toDate);
+        Assert.notNull(whenGenerated);
+        Assert.notNull(tradeConfirmations);
         return new FlexStatement.TradeConfirmStatement(
                 accountId,
                 fromDate,

@@ -1,7 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -21,13 +21,13 @@ public class EquitySummaryBuilder {
     private BigDecimal total;
 
     public EquitySummary build() {
-        Validate.notNull(reportDate);
-        Validate.matches(currency, Regex.CCY);
-        Validate.notNull(cash);
-        Validate.notNull(stock);
-        Validate.notNull(dividendAccruals);
-        Validate.notNull(interestAccruals);
-        Validate.notNull(total);
+        Assert.notNull(reportDate);
+        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.notNull(cash);
+        Assert.notNull(stock);
+        Assert.notNull(dividendAccruals);
+        Assert.notNull(interestAccruals);
+        Assert.notNull(total);
 
         return new EquitySummary(
                 this.reportDate,

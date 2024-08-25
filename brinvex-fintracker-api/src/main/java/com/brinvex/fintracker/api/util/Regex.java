@@ -4,13 +4,17 @@ import java.util.regex.Pattern;
 
 public enum Regex {
 
-    CCY(Pattern.compile("[A-Z]{3}"));
+    CCY(Pattern.compile("[A-Z]{3}")),
 
-    public enum Tolerance {
-        NULL_OK,
-        EMPTY_OK,
-        BLANK_OK
-    }
+    /**
+     * Pattern for validating Alpha-2 country codes.
+     * <p>
+     * This pattern checks for a two-letter uppercase code, as defined in ISO 3166-1 alpha-2.
+     * Alpha-2 codes are used to represent countries and are always two uppercase letters
+     * (e.g., "US" for the United States, "CZ" for Czech Republic).
+     * </p>
+     */
+    COUNTRY_2(Pattern.compile("[A-Z]{2}"));
 
     private final Pattern pattern;
 
@@ -23,36 +27,7 @@ public enum Regex {
     }
 
     public boolean matches(String str) {
-        return Regex.matches(pattern, str);
-    }
-
-    public boolean matches(String str, Tolerance tolerance) {
-        return Regex.matches(pattern, str, tolerance);
-    }
-
-    public static boolean matches(Regex regex, String str) {
-        return matches(regex.pattern(), str, null);
-    }
-
-    public static boolean matches(Regex regex, String str, Tolerance tolerance) {
-        return matches(regex.pattern(), str, tolerance);
-    }
-
-    public static boolean matches(Pattern pattern, String str) {
-        return matches(pattern, str, null);
-    }
-
-    public static boolean matches(Pattern pattern, String str, Tolerance tolerance) {
-        if (str == null) {
-            return tolerance == Tolerance.NULL_OK || tolerance == Tolerance.BLANK_OK;
-        }
-        if (str.isEmpty()) {
-            return tolerance == Tolerance.EMPTY_OK || tolerance == Tolerance.BLANK_OK;
-        }
-        if (str.isBlank()) {
-            return tolerance == Tolerance.BLANK_OK;
-        }
-        return pattern.matcher(str).matches();
+        return pattern().matcher(str).matches();
     }
 
 

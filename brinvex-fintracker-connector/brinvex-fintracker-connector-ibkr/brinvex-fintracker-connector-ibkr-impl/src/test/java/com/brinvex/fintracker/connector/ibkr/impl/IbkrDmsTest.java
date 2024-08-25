@@ -4,7 +4,7 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
-import com.brinvex.fintracker.testsupport.TestSupport;
+import com.brinvex.fintracker.common.test.TestSupport;
 import com.brinvex.util.dms.api.DmsFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -27,13 +27,13 @@ public class IbkrDmsTest {
 
     private static final TestSupport testSupport = new TestSupport("connector-ibkr");
 
-    private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1");
+    private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1.accountId");
 
-    private static boolean ibkrTestAccount1IsNotNull() {
+    private static boolean ibkrTestAccount1() {
         return ibkrTestAccount1 != null;
     }
 
-    @EnabledIf("ibkrTestAccount1IsNotNull")
+    @EnabledIf("ibkrTestAccount1")
     @SuppressWarnings("SequencedCollectionMethodCanBeUsed")
     @Test
     void dmsConsistency() {

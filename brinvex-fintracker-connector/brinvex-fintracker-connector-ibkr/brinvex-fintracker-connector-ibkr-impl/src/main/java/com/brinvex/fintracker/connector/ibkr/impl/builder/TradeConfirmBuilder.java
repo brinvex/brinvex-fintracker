@@ -1,7 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.BuySell;
@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.function.Predicate;
 
 @SuppressWarnings("DuplicatedCode")
 @Setter
@@ -49,33 +50,33 @@ public class TradeConfirmBuilder {
     private String extraDateTimeStr;
 
     public TradeConfirm build() {
-        Validate.matches(currency, Regex.CCY);
-        Validate.notNull(assetCategory);
-        Validate.notNullNotBlank(symbol);
-        Validate.notNullNotBlank(description);
-        Validate.notNull(securityID);
-        Validate.notNull(figi);
-        Validate.notNull(isin);
-        Validate.notNull(listingExchange);
-        Validate.notNullNotBlank(tradeID);
-        Validate.notNull(reportDate);
-        Validate.notNull(tradeDate);
-        Validate.notNull(settleDate);
-        Validate.notNull(transactionType);
-        Validate.notNullNotBlank(exchange);
-        Validate.notNull(quantity);
-        Validate.notNull(price);
-        Validate.notNull(amount);
-        Validate.notNull(proceeds);
-        Validate.notNull(netCash);
-        Validate.notNull(commission);
-        Validate.notNull(commissionCurrency);
-        Validate.notNull(tax);
-        Validate.notNull(buySell);
-        Validate.notNull(buySell);
-        Validate.notNullNotBlank(orderID);
-        Validate.notNull(orderTime);
-        Validate.notNullNotBlank(extraDateTimeStr);
+        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.notNull(assetCategory);
+        Assert.notNullNotBlank(symbol);
+        Assert.notNullNotBlank(description);
+        Assert.notNull(securityID);
+        Assert.notNull(figi);
+        Assert.notNull(isin);
+        Assert.notNull(listingExchange);
+        Assert.notNullNotBlank(tradeID);
+        Assert.notNull(reportDate);
+        Assert.notNull(tradeDate);
+        Assert.notNull(settleDate);
+        Assert.notNull(transactionType);
+        Assert.notNullNotBlank(exchange);
+        Assert.notNull(quantity);
+        Assert.notNull(price);
+        Assert.notNull(amount);
+        Assert.notNull(proceeds);
+        Assert.notNull(netCash);
+        Assert.notNull(commission);
+        Assert.notNull(commissionCurrency);
+        Assert.notNull(tax);
+        Assert.notNull(buySell);
+        Assert.notNull(buySell);
+        Assert.notNullNotBlank(orderID);
+        Assert.notNull(orderTime);
+        Assert.notNullNotBlank(extraDateTimeStr);
 
         return new TradeConfirm(
                 this.currency,

@@ -1,6 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.api.exception.DataException;
+import com.brinvex.util.java.validation.Assert;
+import com.brinvex.util.java.validation.Validate;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
@@ -22,9 +23,7 @@ public class IbkrStatementMergerImpl implements IbkrStatementMerger {
 
     @Override
     public Optional<ActivityStatement> mergeActivityStatements(Collection<ActivityStatement> activityStatements) {
-        if (activityStatements == null) {
-            throw new DataException("activityStatements collection can not be null");
-        }
+        Validate.notNull("activityStatements collection can not be null");
         if (activityStatements.isEmpty()) {
             return Optional.empty();
         }
@@ -49,19 +48,16 @@ public class IbkrStatementMergerImpl implements IbkrStatementMerger {
 
         for (ActivityStatement statement : sortedStatements) {
             String accountId = statement.accountId();
-            if (!resultAccountId.equals(accountId)) {
-                throw new DataException("Unexpected multiple accounts: %s, %s".formatted(
-                        resultAccountId, accountId
-                ));
-            }
+            Assert.equal(accountId, resultAccountId, () -> "Unexpected multiple accounts: %s, %s"
+                    .formatted(resultAccountId, accountId));
 
             LocalDate fromDate = statement.fromDate();
             LocalDate toDate = statement.toDate();
 
-            if (resultToDate.plusDays(1).isBefore(fromDate)) {
-                throw new DataException("Missing period: '%s - %s', accountId=%s".formatted(
-                        resultToDate.plusDays(1), fromDate.minusDays(1), resultAccountId));
-            }
+            LocalDate expectedFromDate = resultToDate.plusDays(1);
+            Assert.equalOrAfter(expectedFromDate, fromDate, () -> "Missing period: '%s - %s', accountId=%s"
+                    .formatted(expectedFromDate, fromDate.minusDays(1), resultAccountId));
+
             if (toDate.isAfter(resultToDate)) {
                 resultToDate = toDate;
             }

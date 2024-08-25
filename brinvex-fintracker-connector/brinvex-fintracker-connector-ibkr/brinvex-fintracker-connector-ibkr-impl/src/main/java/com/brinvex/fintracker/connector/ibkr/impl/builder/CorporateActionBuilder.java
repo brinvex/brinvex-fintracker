@@ -1,7 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
@@ -39,26 +39,26 @@ public class CorporateActionBuilder {
 
 
     public CorporateAction build() {
-        Validate.notNull(reportDate);
-        Validate.notNull(assetCategory);
-        Validate.notNull(assetSubCategory);
-        Validate.notNullNotBlank(symbol);
-        Validate.notNull(type);
-        Validate.matches(currency, Regex.CCY);
-        Validate.notNull(amount);
-        Validate.notNull(value);
-        Validate.notNull(quantity);
-        Validate.notNull(proceeds);
-        Validate.notNull(description);
-        Validate.notNullNotBlank(securityID);
-        Validate.notNull(securityIDType);
-        Validate.notNullNotBlank(figi);
-        Validate.notNullNotBlank(isin);
-        Validate.notNullNotBlank(listingExchange);
-        Validate.notNullNotBlank(issuerCountryCode);
-        Validate.notNullNotBlank(extraDateTimeStr);
-        Validate.notNullNotBlank(transactionId);
-        Validate.notNullNotBlank(actionID);
+        Assert.notNull(reportDate);
+        Assert.notNull(assetCategory);
+        Assert.notNull(assetSubCategory);
+        Assert.notNullNotBlank(symbol);
+        Assert.notNull(type);
+        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.notNull(amount);
+        Assert.notNull(value);
+        Assert.notNull(quantity);
+        Assert.notNull(proceeds);
+        Assert.notNull(description);
+        Assert.notNullNotBlank(securityID);
+        Assert.notNull(securityIDType);
+        Assert.notNullNotBlank(figi);
+        Assert.notNullNotBlank(isin);
+        Assert.notNullNotBlank(listingExchange);
+        Assert.notNullNotBlank(issuerCountryCode);
+        Assert.notNullNotBlank(extraDateTimeStr);
+        Assert.notNullNotBlank(transactionId);
+        Assert.notNullNotBlank(actionID);
 
         return new CorporateAction(
                 this.reportDate,

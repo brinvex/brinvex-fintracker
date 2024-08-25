@@ -12,7 +12,7 @@ import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
-import com.brinvex.fintracker.testsupport.TestSupport;
+import com.brinvex.fintracker.common.test.TestSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.slf4j.Logger;
@@ -37,13 +37,13 @@ public class IbkrParserTest {
 
     private static final TestSupport testSupport = new TestSupport("connector-ibkr");
 
-    private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1");
+    private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1.accountId");
 
-    private static boolean ibkrTestAccount1IsNotNull() {
+    private static boolean ibkrTestAccount1() {
         return ibkrTestAccount1 != null;
     }
 
-    @EnabledIf("ibkrTestAccount1IsNotNull")
+    @EnabledIf("ibkrTestAccount1")
     @Test
     void parseActivity() {
         IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers1"));
@@ -70,7 +70,7 @@ public class IbkrParserTest {
         }
     }
 
-    @EnabledIf("ibkrTestAccount1IsNotNull")
+    @EnabledIf("ibkrTestAccount1")
     @Test
     void parseTradeConfirm() {
         IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers2"));
@@ -100,7 +100,7 @@ public class IbkrParserTest {
         }
     }
 
-    @EnabledIf("ibkrTestAccount1IsNotNull")
+    @EnabledIf("ibkrTestAccount1")
     @Test
     void parseEquitySummaries() {
         IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers1"));

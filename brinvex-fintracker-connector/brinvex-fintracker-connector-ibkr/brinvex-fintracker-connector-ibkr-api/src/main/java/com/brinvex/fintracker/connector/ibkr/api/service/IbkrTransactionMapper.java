@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.api.service;
 
-import com.brinvex.fintracker.api.domain.FinTransaction;
+import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;

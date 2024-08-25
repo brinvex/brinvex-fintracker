@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.api.domain;
+package com.brinvex.fintracker.api.model.domain;
 
 public enum FinTransactionCategory {
 

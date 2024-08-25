@@ -10,9 +10,9 @@ import java.util.List;
 
 public interface IbkrDms {
 
-    List<ActivityDocKey> getActivityDocKeys(String accountId, LocalDate fromDayIncl, LocalDate toDayIncl);
+    List<ActivityDocKey> getActivityDocKeys(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl);
 
-    List<TradeConfirmDocKey> getTradeConfirmDocKeys(String accountId, LocalDate fromDayIncl, LocalDate toDayIncl);
+    List<TradeConfirmDocKey> getTradeConfirmDocKeys(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl);
 
     TradeConfirmDocKey getUniqueTradeConfirmDocKey(String accountId, LocalDate day);
 

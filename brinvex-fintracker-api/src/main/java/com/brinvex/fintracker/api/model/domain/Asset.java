@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.api.domain;
+package com.brinvex.fintracker.api.model.domain;
 
 import java.io.Serializable;
 
@@ -9,6 +9,8 @@ public record Asset(
         String symbol,
         String name,
         String countryFigi,
-        String isin
+        String isin,
+        String extraType,
+        String extraDetail
 ) implements Serializable {
 }

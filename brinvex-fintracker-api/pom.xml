@@ -13,9 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.brinvex.fintracker</groupId>
-            <artifactId>brinvex-fintracker-common-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.brinvex.util</groupId>
+            <artifactId>brinvex-util-dms-api</artifactId>
         </dependency>
     </dependencies>
 </project>

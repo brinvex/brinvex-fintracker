@@ -16,11 +16,5 @@
             <groupId>com.brinvex.fintracker</groupId>
             <artifactId>brinvex-fintracker-api</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.brinvex.util</groupId>
-            <artifactId>brinvex-util-dms-api</artifactId>
-        </dependency>
-
     </dependencies>
 </project>

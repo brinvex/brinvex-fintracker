@@ -23,6 +23,9 @@ import com.brinvex.fintracker.connector.ibkr.impl.builder.EquitySummaryBuilder;
 import com.brinvex.fintracker.connector.ibkr.impl.builder.TradeBuilder;
 import com.brinvex.fintracker.connector.ibkr.impl.builder.TradeConfirmBuilder;
 import com.brinvex.fintracker.connector.ibkr.impl.builder.TradeConfirmStatementBuilder;
+import com.brinvex.util.java.validation.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
@@ -35,7 +38,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -43,6 +46,8 @@ import java.util.function.Function;
 public class IbkrStatementParserImpl implements IbkrStatementParser {
 
     private static class Lazy {
+        private static final Logger LOG = LoggerFactory.getLogger(IbkrStatementParserImpl.class);
+
         private static final XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 
         private static final DateTimeFormatter ibkrDf = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -53,13 +58,12 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
     @Override
     public FlexStatement.ActivityStatement parseActivityStatement(String statementXmlContent) {
 
-        FlexStatementType flexStatementType = null;
         ActivityStatementBuilder statementBldr = null;
 
-        List<CashTransaction> cashTransactions = new ArrayList<>();
-        List<CorporateAction> corporateActions = new ArrayList<>();
-        List<EquitySummary> equitySummaries = new ArrayList<>();
-        List<Trade> trades = new ArrayList<>();
+        List<CashTransaction> cashTransactions = new LinkedList<>();
+        List<CorporateAction> corporateActions = new LinkedList<>();
+        List<EquitySummary> equitySummaries = new LinkedList<>();
+        List<Trade> trades = new LinkedList<>();
 
         try {
             XMLEventReader reader = Lazy.xmlInputFactory.createXMLEventReader(new StringReader(statementXmlContent));
@@ -70,14 +74,12 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
                 }
                 StartElement e = xmlEvent.asStartElement();
                 switch (e.getName().getLocalPart()) {
-                    case "FlexQueryResponse" -> flexStatementType = parseEnum(FlexStatementType::fromValue, getAttrValue(e, FlexQueryResponseQN.type));
+                    case "FlexQueryResponse" -> {
+                        FlexStatementType flexStatementType = parseEnum(FlexStatementType::fromValue, getAttrValue(e, FlexQueryResponseQN.type));
+                        Assert.equal(FlexStatementType.ACT, flexStatementType);
+                    }
                     case "FlexStatement" -> {
-                        if (statementBldr != null) {
-                            throw new IllegalArgumentException("Unexpected xml node FlexStatement");
-                        }
-                        if (!FlexStatementType.ACT.equals(flexStatementType)) {
-                            throw new IllegalArgumentException("Unexpected statement type: " + flexStatementType);
-                        }
+                        Assert.isNull(statementBldr);
                         statementBldr = new ActivityStatementBuilder()
                                 .accountId(getAttrValue(e, FlexStatementQN.accountId))
                                 .fromDate(parseDate(getAttrValue(e, FlexStatementQN.fromDate)))
@@ -173,10 +175,12 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
                 }
             }
         } catch (XMLStreamException e) {
+            Lazy.LOG.error("XMLStreamException while parsing: %s".formatted(statementXmlContent), e);
             throw new RuntimeException(e);
         }
         if (statementBldr == null) {
-            throw new IllegalArgumentException("Parsing failed: " + statementXmlContent);
+            Lazy.LOG.error("Expected node 'FlexStatement' was not found while parsing ActivityStatement: {}", statementXmlContent);
+            throw new IllegalArgumentException("Expected node 'FlexStatement' was not found while parsing ActivityStatement");
         }
         return statementBldr.build();
     }
@@ -184,10 +188,9 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
     @Override
     public FlexStatement.TradeConfirmStatement parseTradeConfirmStatement(String statementXmlContent) {
 
-        FlexStatementType flexStatementType = null;
         TradeConfirmStatementBuilder statementBldr = null;
 
-        List<TradeConfirm> tradeConfirms = new ArrayList<>();
+        List<TradeConfirm> tradeConfirms = new LinkedList<>();
 
         try {
             XMLEventReader reader = Lazy.xmlInputFactory.createXMLEventReader(new StringReader(statementXmlContent));
@@ -198,14 +201,12 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
                 }
                 StartElement e = xmlEvent.asStartElement();
                 switch (e.getName().getLocalPart()) {
-                    case "FlexQueryResponse" -> flexStatementType = parseEnum(FlexStatementType::fromValue, getAttrValue(e, FlexQueryResponseQN.type));
+                    case "FlexQueryResponse" -> {
+                        FlexStatementType flexStatementType = parseEnum(FlexStatementType::fromValue, getAttrValue(e, FlexQueryResponseQN.type));
+                        Assert.equal(FlexStatementType.TC, flexStatementType);
+                    }
                     case "FlexStatement" -> {
-                        if (statementBldr != null) {
-                            throw new IllegalArgumentException("Unexpected xml node FlexStatement");
-                        }
-                        if (!FlexStatementType.TC.equals(flexStatementType)) {
-                            throw new IllegalArgumentException("Unexpected statement type: " + flexStatementType);
-                        }
+                        Assert.isNull(statementBldr);
                         statementBldr = new TradeConfirmStatementBuilder()
                                 .accountId(getAttrValue(e, FlexStatementQN.accountId))
                                 .fromDate(parseDate(getAttrValue(e, FlexStatementQN.fromDate)))
@@ -247,10 +248,12 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
             }
 
         } catch (XMLStreamException e) {
+            Lazy.LOG.error("XMLStreamException while parsing: %s".formatted(statementXmlContent), e);
             throw new RuntimeException(e);
         }
         if (statementBldr == null) {
-            throw new IllegalArgumentException("Parsing failed: " + statementXmlContent);
+            Lazy.LOG.error("Expected node 'FlexStatement' was not found while parsing TradeConfirmStatement: {}", statementXmlContent);
+            throw new IllegalArgumentException("Expected node 'FlexStatement' was not found while parsing TradeConfirmStatement");
         }
         return statementBldr.build();
     }

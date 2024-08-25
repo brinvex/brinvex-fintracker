@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
-import com.brinvex.fintracker.common.impl.Validate;
+import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
@@ -28,14 +28,13 @@ public class ActivityStatementBuilder {
     private Collection<EquitySummary> equitySummaries;
 
     public FlexStatement.ActivityStatement build() {
-        Validate.notNullNotBlank(accountId);
-        Validate.notNull(fromDate);
-        Validate.notNull(toDate);
-        Validate.notNull(whenGenerated);
-        Validate.notNull(cashTransactions);
-        Validate.notNull(trades);
-        Validate.notNull(corporateActions);
-        Validate.notNull(equitySummaries);
+        Assert.notNullNotBlank(accountId);
+        Assert.notNull(fromDate);
+        Assert.notNull(toDate);
+        Assert.notNull(cashTransactions);
+        Assert.notNull(trades);
+        Assert.notNull(corporateActions);
+        Assert.notNull(equitySummaries);
 
         return new FlexStatement.ActivityStatement(
                 accountId,
