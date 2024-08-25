@@ -32,15 +32,15 @@ public class IbkrFetcherTest {
 
     private static final String ibkrTestAccount1TradeConfirmFlexQueryId = testSupport.property("ibkrTestAccount1.tradeConfirmationFlexQueryId");
 
-    private static boolean ibkrTestAccount1CredentialsIs() {
+    private static boolean ibkrTestAccount1Credentials() {
         return ibkrTestAccount1 != null
                && ibkrTestAccount1Token != null
                && ibkrTestAccount1ActFlexQueryId != null
                && ibkrTestAccount1TradeConfirmFlexQueryId != null;
     }
 
-    // When running from IDEA, @EnableIf is ignored if @EnabledIfSystemProperty is present
-    @EnabledIf("ibkrTestAccount1CredentialsIs")
+    // When running from IDEA, @EnableIf is ignored if @EnabledIfSystemProperty is present, but it doesn't cause problem for us.
+    @EnabledIf("ibkrTestAccount1Credentials")
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void fetch() throws InterruptedException {

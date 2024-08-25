@@ -6,6 +6,8 @@ import com.brinvex.fintracker.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
 import com.brinvex.fintracker.common.impl.facade.HttpClientFacadeImpl;
 import com.brinvex.fintracker.common.test.SimplePtf;
+import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.connector.ibkr.api.model.IbkrCredentials;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
@@ -15,29 +17,35 @@ import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrPtfProgressProvide
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementMergerImpl;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrTransactionMapperImpl;
-import com.brinvex.fintracker.common.test.TestSupport;
 import com.brinvex.util.dms.api.Dms;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import static com.brinvex.fintracker.common.test.Country.US;
 import static com.brinvex.fintracker.common.test.Currency.EUR;
 import static com.brinvex.fintracker.common.test.Currency.USD;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
+import static java.time.Duration.ofMinutes;
 import static java.time.LocalDate.now;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class IbkrPtfProgressProviderTest {
+public class IbkrPtfProgressOnlineTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IbkrPtfProgressProviderTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IbkrPtfProgressOnlineTest.class);
 
     private static final TestSupport testSupport = new TestSupport("connector-ibkr");
 
@@ -49,21 +57,18 @@ public class IbkrPtfProgressProviderTest {
 
     private static final String ibkrTestAccount1TradeConfirmFlexQueryId = testSupport.property("ibkrTestAccount1.tradeConfirmationFlexQueryId");
 
-    private static boolean ibkrTestAccount1() {
-        return ibkrTestAccount1 != null;
-    }
-
-    private static boolean ibkrTestAccount1CredentialsIs() {
+    private static boolean ibkrTestAccount1Credentials() {
         return ibkrTestAccount1 != null
                && ibkrTestAccount1Token != null
                && ibkrTestAccount1ActFlexQueryId != null
                && ibkrTestAccount1TradeConfirmFlexQueryId != null;
     }
-
-    @EnabledIf("ibkrTestAccount1")
+    // When running from IDEA, @EnableIf is ignored if @EnabledIfSystemProperty is present, but it doesn't cause problem for us.
+    @EnabledIf("ibkrTestAccount1Credentials")
+    @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
-    void portfolioProgress_offline() {
-        String workspace = "dms-pers1";
+    void portfolioProgress() {
+        String workspace = "dms-online1";
         Dms dms = testSupport.dmsFactory().getDms(workspace);
         IbkrDms ibkrDms = new IbkrDmsImpl(dms);
         IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
@@ -73,46 +78,37 @@ public class IbkrPtfProgressProviderTest {
                 new IbkrStatementMergerImpl(),
                 new IbkrTransactionMapperImpl()
         );
-        LocalDate today = now();
 
-        List<ActivityDocKey> docKeys = ibkrDms.getActivityDocKeys(ibkrTestAccount1, LocalDate.MIN, today);
-        assertFalse(docKeys.isEmpty());
-        for (LocalDate d = docKeys.getFirst().fromDateIncl(); d.isBefore(now()); d = d.plusMonths(1)) {
-            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, d, today);
-            assertNotNull(ptfProgress);
+        IbkrCredentials ibkrCredentials = new IbkrCredentials(
+                ibkrTestAccount1Token, 
+                ibkrTestAccount1ActFlexQueryId, 
+                ibkrTestAccount1TradeConfirmFlexQueryId
+        );
+
+
+        SimplePtf ptf;
+        {
+            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOnline(ibkrTestAccount1, ibkrCredentials, parse("2022-08-03"), parse("2024-06-10"), ofMinutes(0));
+            ptf = new SimplePtf(ptfProgress.transactions());
+
+            assertEquals(2, ptf.getCurrencies().size());
+            assertEquals(0, ptf.getHoldingQty(US, "NVDA").compareTo(new BigDecimal("60")));
         }
-    }
 
-    @EnabledIf("ibkrTestAccount1")
-    @Test
-    void portfolioProgress_offline_spinOff() {
-        String workspace = "dms-pers1";
-        Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                ibkrDms,
-                new IbkrStatementParserImpl(),
-                new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                new IbkrStatementMergerImpl(),
-                new IbkrTransactionMapperImpl()
-        );
+        {
+            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOnline(ibkrTestAccount1, ibkrCredentials, parse("2022-08-03"), now(), ofMinutes(1));
 
-        SimplePtf ptf = new SimplePtf();
+            assertTrue(ptf.getTransactions().size() <= ptfProgress.transactions().size());
 
-        PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-02"));
-        ptf.applyTransactions(ptfProgress.transactions());
+            ptf = new SimplePtf(ptfProgress.transactions());
+        }
+        {
+            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOnline(ibkrTestAccount1, ibkrCredentials, parse("2022-08-03"), now(), ofMinutes(1));
+            assertTrue(ptf.getTransactions().size() <= ptfProgress.transactions().size());
 
-        assertEquals(0, ptf.getHoldingQty(US, "GE").compareTo(new BigDecimal(6)));
-        assertEquals(0, ptf.getHoldingQty(US, "GEV").compareTo(new BigDecimal(1)));
-        assertEquals(0, ptf.getCash(EUR).compareTo(new BigDecimal("234.561374405")));
-        assertEquals(0, ptf.getCash(USD).compareTo(new BigDecimal("153.48807417")));
-
-        FinTransaction transformationTran = ptf.getTransactions().get(225);
-        assertEquals(FinTransactionType.TRANSFORMATION, transformationTran.type());
-        assertEquals("GEV", transformationTran.asset().symbol());
-        FinTransaction sellTran = ptf.getTransactions().get(226);
-        assertEquals(FinTransactionType.SELL, sellTran.type());
-        assertEquals("GEV", sellTran.asset().symbol());
+            ptf = new SimplePtf(ptfProgress.transactions());
+            assertTrue(ptf.getCurrencies().size() >= 2);
+        }
     }
 
 }

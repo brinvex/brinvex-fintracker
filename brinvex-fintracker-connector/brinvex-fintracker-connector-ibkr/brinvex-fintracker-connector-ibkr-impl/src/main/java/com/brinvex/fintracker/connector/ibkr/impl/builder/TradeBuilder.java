@@ -73,9 +73,7 @@ public class TradeBuilder {
         Assert.notNull(ibCommission);
         Assert.notNull(ibCommissionCurrency);
         Assert.notNull(netCash);
-        Assert.notNull(cost);
         Assert.notNull(buySell);
-        Assert.notNullNotBlank(transactionID);
         Assert.notNullNotBlank(ibOrderID);
         Assert.notNullNotBlank(extraDateTimeStr);
 

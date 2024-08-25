@@ -333,6 +333,7 @@ public class IbkrTransactionMapperImpl implements IbkrTransactionMapper {
                         .securityID(tradeConfirm.securityID())
                         .securityIDType(tradeConfirm.securityIDType())
                         .isin(tradeConfirm.isin())
+                        .figi(tradeConfirm.figi())
                         .listingExchange(tradeConfirm.listingExchange())
                         .tradeID(tradeConfirm.tradeID())
                         .reportDate(tradeConfirm.reportDate())
@@ -351,6 +352,7 @@ public class IbkrTransactionMapperImpl implements IbkrTransactionMapper {
                         .buySell(tradeConfirm.buySell())
                         .ibOrderID(tradeConfirm.orderID())
                         .orderTime(tradeConfirm.orderTime())
+                        .tradeDate(tradeConfirm.tradeDate())
                         .build())
                 .collect(Collectors.toList());
         return mapTrades(tradeConfirmTrades);

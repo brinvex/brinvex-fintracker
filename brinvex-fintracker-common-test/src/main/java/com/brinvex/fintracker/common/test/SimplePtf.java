@@ -47,6 +47,13 @@ public class SimplePtf {
     private final Map<String, BigDecimal> wallets = new LinkedHashMap<>();
     private final List<FinTransaction> transactions = new ArrayList<>();
 
+    public SimplePtf() {
+    }
+
+    public SimplePtf(Collection<FinTransaction> finTransactions) {
+        applyTransactions(finTransactions);
+    }
+
     public Set<String> getCurrencies() {
         return unmodifiableSet(wallets.keySet());
     }
@@ -67,6 +74,10 @@ public class SimplePtf {
 
     public List<FinTransaction> getTransactions() {
         return unmodifiableList(transactions);
+    }
+
+    public int getHoldingsCount() {
+        return holdings.size();
     }
 
     public void applyTransaction(FinTransaction tran) {
