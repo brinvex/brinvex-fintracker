@@ -18,7 +18,7 @@ import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateActionType;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.TradeConfirm;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrTransactionMapper;
+import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import com.brinvex.fintracker.connector.ibkr.impl.builder.TradeBuilder;
 
 import java.math.BigDecimal;
@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.groupingBy;
 
 @SuppressWarnings({"DuplicatedCode", "unused"})
-public class IbkrTransactionMapperImpl implements IbkrTransactionMapper {
+public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
 
     private static final DateTimeFormatter idDf = DateTimeFormatter.ofPattern("yyyyMMdd");
 

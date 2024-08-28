@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 
 public interface IbkrPtfProgressProvider {
-    PtfProgress getPortfolioProgressOffline(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl);
 
     PtfProgress getPortfolioProgressOnline(
             String accountId,
@@ -15,5 +14,11 @@ public interface IbkrPtfProgressProvider {
             LocalDate fromDateIncl,
             LocalDate toDateIncl,
             Duration staleTolerance
+    );
+
+    PtfProgress getPortfolioProgressOffline(
+            String accountId,
+            LocalDate fromDateIncl,
+            LocalDate toDateIncl
     );
 }

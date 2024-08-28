@@ -8,7 +8,7 @@ import com.brinvex.fintracker.connector.ibkr.api.model.statement.TradeConfirm;
 
 import java.util.List;
 
-public interface IbkrTransactionMapper {
+public interface IbkrFinTransactionMapper {
 
     List<FinTransaction> mapCashTransactions(List<CashTransaction> cashTrans);
 

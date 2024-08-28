@@ -4,18 +4,13 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.common.impl.facade.HttpClientFacadeImpl;
 import com.brinvex.fintracker.common.test.SimplePtf;
 import com.brinvex.fintracker.common.test.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
+import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrFetcherImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrPtfProgressProviderImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementMergerImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrTransactionMapperImpl;
 import com.brinvex.util.dms.api.Dms;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -40,13 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class IbkrPtfProgressOfflineTest {
+class IbkrPtfProgressOfflineTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(IbkrPtfProgressOfflineTest.class);
 
     private static final TestSupport testSupport = new TestSupport("connector-ibkr");
 
     private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1.accountId");
+
+    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
 
     private static boolean ibkrTestAccount1() {
         return ibkrTestAccount1 != null;
@@ -58,13 +55,7 @@ public class IbkrPtfProgressOfflineTest {
         String workspace = "dms-pers1";
         Dms dms = testSupport.dmsFactory().getDms(workspace);
         IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                ibkrDms,
-                new IbkrStatementParserImpl(),
-                new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                new IbkrStatementMergerImpl(),
-                new IbkrTransactionMapperImpl()
-        );
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
         LocalDate today = now();
 
         List<ActivityDocKey> docKeys = ibkrDms.getActivityDocKeys(ibkrTestAccount1, LocalDate.MIN, today);
@@ -80,15 +71,7 @@ public class IbkrPtfProgressOfflineTest {
     void portfolioProgress_spinOff() {
         String workspace = "dms-pers1";
         Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                ibkrDms,
-                new IbkrStatementParserImpl(),
-                new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                new IbkrStatementMergerImpl(),
-                new IbkrTransactionMapperImpl()
-        );
-
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
 
         PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-02"));
         SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
@@ -110,14 +93,7 @@ public class IbkrPtfProgressOfflineTest {
     void portfolioProgress_paymentOfLieuOfDividends() {
         String workspace = "dms-pers1";
         Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                ibkrDms,
-                new IbkrStatementParserImpl(),
-                new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                new IbkrStatementMergerImpl(),
-                new IbkrTransactionMapperImpl()
-        );
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-06-28"));
@@ -148,14 +124,8 @@ public class IbkrPtfProgressOfflineTest {
 
         {
             Dms dms = testSupport.dmsFactory().getDms("dms-pers2");
-            IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-            IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                    ibkrDms,
-                    new IbkrStatementParserImpl(),
-                    new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                    new IbkrStatementMergerImpl(),
-                    new IbkrTransactionMapperImpl()
-            );
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+
             List<FinTransaction> actTrans1;
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-16"));
@@ -185,14 +155,8 @@ public class IbkrPtfProgressOfflineTest {
         }
         {
             Dms dms = testSupport.dmsFactory().getDms("dms-pers1");
-            IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-            IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                    ibkrDms,
-                    new IbkrStatementParserImpl(),
-                    new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                    new IbkrStatementMergerImpl(),
-                    new IbkrTransactionMapperImpl()
-            );
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-18"));
                 SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
@@ -222,14 +186,7 @@ public class IbkrPtfProgressOfflineTest {
     @Test
     void ptfProgress_corpActions() {
         Dms dms = testSupport.dmsFactory().getDms("dms-pers1");
-        IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = new IbkrPtfProgressProviderImpl(
-                ibkrDms,
-                new IbkrStatementParserImpl(),
-                new IbkrFetcherImpl(new HttpClientFacadeImpl()),
-                new IbkrStatementMergerImpl(),
-                new IbkrTransactionMapperImpl()
-        );
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2023-08-02"));

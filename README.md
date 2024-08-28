@@ -13,6 +13,33 @@ If you have any questions, feedback, or need assistance, please reach out to _in
 I am also open to exploring work partnerships of any kind. Whether you’re interested in collaboration, 
 integration, or other opportunities, feel free to get in touch—I’d love to hear from you!
 
+### Maven Dependencies
+
+    <properties>
+         <brinvex-fintracker.version>0.0.3</brinvex-fintracker.version>
+    </properties>
+    
+    <repository>
+        <id>repository.brinvex</id>
+        <name>Brinvex Repository</name>
+        <url>https://github.com/brinvex/brinvex-repo/raw/main/</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+    
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+        <scope>runtime</scope>
+    </dependency>
+
 ## Features
 
 ### Account Statement Management

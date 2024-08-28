@@ -1,5 +1,7 @@
 package com.brinvex.fintracker.common.test;
 
+import com.brinvex.fintracker.api.facade.HttpClientFacade;
+import com.brinvex.fintracker.api.factory.FinTrackerFactory;
 import com.brinvex.util.dms.api.DmsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +24,15 @@ public class TestSupport {
             .map(Paths::get)
             .orElse(null);
 
+    private static final FinTrackerFactory finTrackerFactory = FinTrackerFactory.create();
+
     private final String module;
 
     private Path moduleTestDataFolder;
 
     private DmsFactory moduleDmsFactory;
+
+    private HttpClientFacade httpClientFacade;
 
     private Properties properties;
 
@@ -67,6 +73,13 @@ public class TestSupport {
             moduleDmsFactory = DmsFactory.createFilesystemDmsFactory(dmsBasePath);
         }
         return moduleDmsFactory;
+    }
+
+    public HttpClientFacade httpClientFacade() {
+        if (httpClientFacade == null) {
+            httpClientFacade = finTrackerFactory.httpClientFacade();
+        }
+        return httpClientFacade;
     }
 
     public String property(String key) {

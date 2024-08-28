@@ -18,7 +18,7 @@ import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrTransactionMapper;
+import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,20 +54,20 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
 
     private final IbkrStatementMerger statementMerger;
 
-    private final IbkrTransactionMapper transactionMapper;
+    private final IbkrFinTransactionMapper finTransactionMapper;
 
     public IbkrPtfProgressProviderImpl(
             IbkrDms dms,
             IbkrStatementParser parser,
             IbkrFetcher fetcher,
             IbkrStatementMerger statementMerger,
-            IbkrTransactionMapper transactionMapper
+            IbkrFinTransactionMapper finTransactionMapper
     ) {
         this.dms = dms;
         this.parser = parser;
         this.fetcher = fetcher;
         this.statementMerger = statementMerger;
-        this.transactionMapper = transactionMapper;
+        this.finTransactionMapper = finTransactionMapper;
     }
 
     @Override
@@ -103,19 +103,6 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
     }
 
     @Override
-    public PtfProgress getPortfolioProgressOffline(
-            String accountId,
-            LocalDate fromDateIncl,
-            LocalDate toDateIncl
-    ) {
-        Validate.notNullNotBlank(accountId, () -> "accountId cannot be null or empty");
-        Validate.notNull(fromDateIncl, () -> "fromDateIncl cannot be null");
-        Validate.notNull(toDateIncl, () -> "toDateIncl cannot be null");
-
-        return getPortfolioProgress(accountId, null, fromDateIncl, toDateIncl, null);
-    }
-
-    @Override
     public PtfProgress getPortfolioProgressOnline(
             String accountId,
             IbkrCredentials credentials,
@@ -130,6 +117,19 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         Validate.notNull(staleTolerance, () -> "staleTolerance cannot be null");
 
         return getPortfolioProgress(accountId, credentials, fromDateIncl, toDateIncl, staleTolerance);
+    }
+
+    @Override
+    public PtfProgress getPortfolioProgressOffline(
+            String accountId,
+            LocalDate fromDateIncl,
+            LocalDate toDateIncl
+    ) {
+        Validate.notNullNotBlank(accountId, () -> "accountId cannot be null or empty");
+        Validate.notNull(fromDateIncl, () -> "fromDateIncl cannot be null");
+        Validate.notNull(toDateIncl, () -> "toDateIncl cannot be null");
+
+        return getPortfolioProgress(accountId, null, fromDateIncl, toDateIncl, null);
     }
 
     private PtfProgress getPortfolioProgress(String accountId, IbkrCredentials credentials, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
@@ -191,11 +191,11 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
             return null;
         }
 
-        List<FinTransaction> cashTrans = transactionMapper.mapCashTransactions(mergedActStatement.cashTransactions());
+        List<FinTransaction> cashTrans = finTransactionMapper.mapCashTransactions(mergedActStatement.cashTransactions());
 
-        List<FinTransaction> trades = transactionMapper.mapTrades(mergedActStatement.trades());
+        List<FinTransaction> trades = finTransactionMapper.mapTrades(mergedActStatement.trades());
 
-        List<FinTransaction> corpActions = transactionMapper.mapCorporateAction(mergedActStatement.corporateActions());
+        List<FinTransaction> corpActions = finTransactionMapper.mapCorporateAction(mergedActStatement.corporateActions());
 
         List<FinTransaction> tcTrades;
         {
@@ -236,7 +236,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                 }
             }
             if (tcStatement != null) {
-                tcTrades = transactionMapper.mapTradeConfirms(tcStatement.tradeConfirmations());
+                tcTrades = finTransactionMapper.mapTradeConfirms(tcStatement.tradeConfirmations());
             } else {
                 tcTrades = emptyList();
             }

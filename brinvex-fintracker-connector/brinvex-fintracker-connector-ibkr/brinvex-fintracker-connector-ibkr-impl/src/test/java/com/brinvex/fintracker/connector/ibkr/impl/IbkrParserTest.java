@@ -1,6 +1,7 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
+import com.brinvex.fintracker.common.test.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
@@ -9,10 +10,8 @@ import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.ActivityStatement;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
+import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
-import com.brinvex.fintracker.common.test.TestSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class IbkrParserTest {
+class IbkrParserTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(IbkrParserTest.class);
 
@@ -43,13 +42,15 @@ public class IbkrParserTest {
         return ibkrTestAccount1 != null;
     }
 
+    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
+
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseActivity() {
-        IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers1"));
+        IbkrDms dms = ibkrFactory.dms(testSupport.dmsFactory().getDms("dms-pers1"));
         List<ActivityDocKey> docKeys = dms.getActivityDocKeys(ibkrTestAccount1, null, null);
         assertFalse(docKeys.isEmpty());
-        IbkrStatementParser parser = new IbkrStatementParserImpl();
+        IbkrStatementParser parser = ibkrFactory.statementParser();
         for (ActivityDocKey docKey : docKeys) {
             LOG.debug("parseActivity - {}", docKey);
 
@@ -73,10 +74,10 @@ public class IbkrParserTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseTradeConfirm() {
-        IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers2"));
+        IbkrDms dms = ibkrFactory.dms(testSupport.dmsFactory().getDms("dms-pers2"));
         List<TradeConfirmDocKey> docKeys = dms.getTradeConfirmDocKeys(ibkrTestAccount1, null, null);
         assertFalse(docKeys.isEmpty());
-        IbkrStatementParser parser = new IbkrStatementParserImpl();
+        IbkrStatementParser parser = ibkrFactory.statementParser();
         for (TradeConfirmDocKey docKey : docKeys) {
             LOG.debug("parseTradeConfirm - {}", docKey);
 
@@ -103,8 +104,8 @@ public class IbkrParserTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseEquitySummaries() {
-        IbkrDms dms = new IbkrDmsImpl(testSupport.dmsFactory().getDms("dms-pers1"));
-        IbkrStatementParser parser = new IbkrStatementParserImpl();
+        IbkrDms dms = ibkrFactory.dms(testSupport.dmsFactory().getDms("dms-pers1"));
+        IbkrStatementParser parser = ibkrFactory.statementParser();
         ActivityDocKey docKey = new ActivityDocKey(ibkrTestAccount1, parse("2022-08-03"), parse("2023-08-02"));
         String content = dms.getStatementContent(docKey);
         ActivityStatement actStatement = parser.parseActivityStatement(content);

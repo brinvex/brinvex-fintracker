@@ -1,14 +1,12 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.common.impl.facade.HttpClientFacadeImpl;
+import com.brinvex.fintracker.common.test.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.ActivityStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.TradeConfirmStatement;
+import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrFetcherImpl;
-import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
-import com.brinvex.fintracker.common.test.TestSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -18,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class IbkrFetcherTest {
+class IbkrFetcherTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(IbkrFetcherTest.class);
 
@@ -32,6 +30,8 @@ public class IbkrFetcherTest {
 
     private static final String ibkrTestAccount1TradeConfirmFlexQueryId = testSupport.property("ibkrTestAccount1.tradeConfirmationFlexQueryId");
 
+    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
+
     private static boolean ibkrTestAccount1Credentials() {
         return ibkrTestAccount1 != null
                && ibkrTestAccount1Token != null
@@ -44,8 +44,8 @@ public class IbkrFetcherTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void fetch() throws InterruptedException {
-        IbkrFetcher fetcher = new IbkrFetcherImpl(new HttpClientFacadeImpl());
-        IbkrStatementParser parser = new IbkrStatementParserImpl();
+        IbkrFetcher fetcher = ibkrFactory.fetcher(testSupport.httpClientFacade());
+        IbkrStatementParser parser = ibkrFactory.statementParser();
 
         {
             String content = fetcher.fetchFlexStatement(ibkrTestAccount1Token, ibkrTestAccount1ActFlexQueryId, 1, ofSeconds(6));

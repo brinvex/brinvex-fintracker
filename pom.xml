@@ -16,7 +16,7 @@
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.0.3</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
@@ -67,6 +67,8 @@
 
         <brinvex-util-dms.version>1.0.7</brinvex-util-dms.version>
         <brinvex-util-java.version>1.56.0</brinvex-util-java.version>
+
+        <github.global.server>github</github.global.server>
     </properties>
 
     <dependencyManagement>
@@ -116,4 +118,100 @@
         </dependencies>
     </dependencyManagement>
 
+    <distributionManagement>
+        <repository>
+            <id>temp.internal.repo</id>
+            <name>Temporary Internal Staging Repository</name>
+            <url>file://${project.build.directory}/repo</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        
+        <plugins>
+            <!--
+         https://www.baeldung.com/maven-repo-github
+         https://stackoverflow.com/questions/14013644/hosting-a-maven-repository-on-github
+         -->
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <altDeploymentRepository>temp.internal.repo::default::file://${project.build.directory}/repo</altDeploymentRepository>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.11</version>
+                <configuration>
+                    <!-- git commit message -->
+                    <message>Maven artifacts for ${project.name} ${project.version}</message>
+                    <!-- disable webpage processing -->
+                    <noJekyll>true</noJekyll>
+                    <!-- matches distribution management repository url above -->
+                    <outputDirectory>${project.build.directory}/repo</outputDirectory>
+                    <!-- remote branch name -->
+                    <branch>refs/heads/main</branch>
+                    <includes><include>**/*</include></includes>
+                    <!-- GitHub repo name -->
+                    <repositoryName>brinvex-repo</repositoryName>
+                    <!-- GitHub username  -->
+                    <repositoryOwner>brinvex</repositoryOwner>
+                    <merge>true</merge>
+                </configuration>
+                <executions>
+                    <!-- run site-maven-plugin's 'site' target as part of the build's normal 'deploy' phase -->
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>brinvex-github-repo</id>
+            <name>Brinvex Repository</name>
+            <url>https://github.com/brinvex/brinvex-repo/raw/main/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>
