@@ -2,12 +2,11 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 
 
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.common.test.SimplePtf;
-import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.test.support.SimplePtf;
+import com.brinvex.fintracker.test.support.TestSupport;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrCredentials;
-import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
-import com.brinvex.util.dms.api.Dms;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -15,8 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
-import static com.brinvex.fintracker.common.test.Country.US;
+import static com.brinvex.fintracker.test.support.Country.US;
 import static java.time.Duration.ofMinutes;
 import static java.time.LocalDate.now;
 import static java.time.LocalDate.parse;
@@ -37,7 +37,6 @@ class IbkrPtfProgressOnlineTest {
 
     private static final String ibkrTestAccount1TradeConfirmFlexQueryId = testSupport.property("ibkrTestAccount1.tradeConfirmationFlexQueryId");
 
-    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
 
     private static boolean ibkrTestAccount1Credentials() {
         return ibkrTestAccount1 != null
@@ -51,9 +50,8 @@ class IbkrPtfProgressOnlineTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void portfolioProgress() {
-        String workspace = "dms-online1";
-        Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-online1")).get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
         IbkrCredentials ibkrCredentials = new IbkrCredentials(
                 ibkrTestAccount1Token,

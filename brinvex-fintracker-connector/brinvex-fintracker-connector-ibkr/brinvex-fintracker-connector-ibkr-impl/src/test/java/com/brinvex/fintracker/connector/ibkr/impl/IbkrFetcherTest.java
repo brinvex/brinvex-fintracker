@@ -1,10 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.test.support.TestSupport;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.ActivityStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.TradeConfirmStatement;
-import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
 import org.junit.jupiter.api.Test;
@@ -30,8 +30,6 @@ class IbkrFetcherTest {
 
     private static final String ibkrTestAccount1TradeConfirmFlexQueryId = testSupport.property("ibkrTestAccount1.tradeConfirmationFlexQueryId");
 
-    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
-
     private static boolean ibkrTestAccount1Credentials() {
         return ibkrTestAccount1 != null
                && ibkrTestAccount1Token != null
@@ -44,7 +42,9 @@ class IbkrFetcherTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void fetch() throws InterruptedException {
-        IbkrFetcher fetcher = ibkrFactory.fetcher(testSupport.httpClientFacade());
+        IbkrModule ibkrFactory = testSupport.app().get(IbkrModule.class);
+
+        IbkrFetcher fetcher = ibkrFactory.fetcher();
         IbkrStatementParser parser = ibkrFactory.statementParser();
 
         {

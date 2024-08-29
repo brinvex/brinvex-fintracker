@@ -2,17 +2,16 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 
 
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.test.support.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.ActivityStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
-import com.brinvex.util.dms.api.DmsFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.slf4j.Logger;
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,16 +38,14 @@ class IbkrMapperTest {
         return ibkrTestAccount1 != null;
     }
 
-    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
-
     @EnabledIf("ibkrTestAccount1")
     @Test
     void transactionMapping() {
-        DmsFactory dmsFactory = testSupport.dmsFactory();
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
         IbkrStatementParser parser = ibkrFactory.statementParser();
         IbkrStatementMerger merger = ibkrFactory.statementMerger();
         IbkrFinTransactionMapper finTranMapper = ibkrFactory.finTransactionMapper();
-        IbkrDms dms = ibkrFactory.dms(dmsFactory.getDms("dms-pers1"));
+        IbkrDms dms = ibkrFactory.dms();
         List<ActivityStatement> actStatements = dms.getActivityDocKeys(ibkrTestAccount1, null, null)
                 .stream()
                 .map(dms::getStatementContent)

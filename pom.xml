@@ -16,7 +16,7 @@
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
@@ -32,8 +32,8 @@
     </organization>
     <modules>
         <module>brinvex-fintracker-api</module>
-        <module>brinvex-fintracker-common-impl</module>
-        <module>brinvex-fintracker-common-test</module>
+        <module>brinvex-fintracker-core-impl</module>
+        <module>brinvex-fintracker-test-support</module>
         <module>brinvex-fintracker-connector</module>
     </modules>
     <url>https://github.com/brinvex/brinvex-fintracker</url>
@@ -80,12 +80,12 @@
             </dependency>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-common-impl</artifactId>
+                <artifactId>brinvex-fintracker-core-impl</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-common-test</artifactId>
+                <artifactId>brinvex-fintracker-test-support</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

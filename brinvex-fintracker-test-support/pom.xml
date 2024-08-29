@@ -9,54 +9,33 @@
         <version>0.0.4</version>
     </parent>
 
-    <artifactId>brinvex-fintracker-api</artifactId>
+    <artifactId>brinvex-fintracker-test-support</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.brinvex.util</groupId>
             <artifactId>brinvex-util-dms-api</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-            <scope>provided</scope>
+            <groupId>com.brinvex.util</groupId>
+            <artifactId>brinvex-util-dms-impl</artifactId>
+            <scope>runtime</scope>
         </dependency>
-
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
         </dependency>
-
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -1,7 +1,10 @@
 package com.brinvex.fintracker.api.model.domain;
 
+import lombok.Builder;
+
 import java.io.Serializable;
 
+@Builder
 public record Asset(
         String id,
         AssetType type,

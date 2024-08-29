@@ -1,9 +1,12 @@
 package com.brinvex.fintracker.api.model.domain;
 
+import lombok.Builder;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Builder
 public record FinTransaction(
         String id,
         FinTransactionType type,

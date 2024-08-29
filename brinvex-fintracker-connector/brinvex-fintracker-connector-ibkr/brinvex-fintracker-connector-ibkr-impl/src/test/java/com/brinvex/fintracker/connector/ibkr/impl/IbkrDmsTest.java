@@ -1,10 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.test.support.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.util.dms.api.DmsFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static java.time.LocalDate.parse;
@@ -33,18 +34,17 @@ class IbkrDmsTest {
         return ibkrTestAccount1 != null;
     }
 
-    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
-
     @EnabledIf("ibkrTestAccount1")
     @SuppressWarnings("SequencedCollectionMethodCanBeUsed")
     @Test
     void dmsConsistency() {
-        DmsFactory dmsFactory = testSupport.dmsFactory();
         String dmsWorkspace = "dms-tmp1";
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, dmsWorkspace)).get(IbkrModule.class);
+        DmsFactory dmsFactory = testSupport.dmsFactory();
         com.brinvex.util.dms.api.Dms dms = dmsFactory.getDms(dmsWorkspace);
         dms.resetWorkspace();
         dms.purgeWorkspace(LocalDateTime.now());
-        IbkrDms ibkrDms = ibkrFactory.dms(dms);
+        IbkrDms ibkrDms = ibkrFactory.dms();
 
         List<ActivityDocKey> actDocKeys = ibkrDms.getActivityDocKeys(ibkrTestAccount1, LocalDate.MIN, LocalDate.MAX);
         assertTrue(actDocKeys.isEmpty());

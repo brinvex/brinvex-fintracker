@@ -4,11 +4,11 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.common.test.SimplePtf;
-import com.brinvex.fintracker.common.test.TestSupport;
+import com.brinvex.fintracker.test.support.SimplePtf;
+import com.brinvex.fintracker.test.support.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.connector.ibkr.api.factory.IbkrFactory;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
 import com.brinvex.util.dms.api.Dms;
@@ -20,11 +20,12 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import static com.brinvex.fintracker.common.test.Country.US;
-import static com.brinvex.fintracker.common.test.Currency.EUR;
-import static com.brinvex.fintracker.common.test.Currency.USD;
+import static com.brinvex.fintracker.test.support.Country.US;
+import static com.brinvex.fintracker.test.support.Currency.EUR;
+import static com.brinvex.fintracker.test.support.Currency.USD;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.LocalDate.now;
@@ -43,8 +44,6 @@ class IbkrPtfProgressOfflineTest {
 
     private static final String ibkrTestAccount1 = testSupport.property("ibkrTestAccount1.accountId");
 
-    private static final IbkrFactory ibkrFactory = IbkrFactory.create();
-
     private static boolean ibkrTestAccount1() {
         return ibkrTestAccount1 != null;
     }
@@ -53,9 +52,10 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_iterative() {
         String workspace = "dms-pers1";
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
         Dms dms = testSupport.dmsFactory().getDms(workspace);
         IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
         LocalDate today = now();
 
         List<ActivityDocKey> docKeys = ibkrDms.getActivityDocKeys(ibkrTestAccount1, LocalDate.MIN, today);
@@ -70,8 +70,8 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_spinOff() {
         String workspace = "dms-pers1";
-        Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
         PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-02"));
         SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
@@ -92,8 +92,8 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_paymentOfLieuOfDividends() {
         String workspace = "dms-pers1";
-        Dms dms = testSupport.dmsFactory().getDms(workspace);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-06-28"));
@@ -123,8 +123,8 @@ class IbkrPtfProgressOfflineTest {
         List<FinTransaction> actAndTcTrans;
 
         {
-            Dms dms = testSupport.dmsFactory().getDms("dms-pers2");
-            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+            IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers2")).get(IbkrModule.class);
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
             List<FinTransaction> actTrans1;
             {
@@ -154,8 +154,8 @@ class IbkrPtfProgressOfflineTest {
             }
         }
         {
-            Dms dms = testSupport.dmsFactory().getDms("dms-pers1");
-            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+            IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-18"));
@@ -185,8 +185,8 @@ class IbkrPtfProgressOfflineTest {
 
     @Test
     void ptfProgress_corpActions() {
-        Dms dms = testSupport.dmsFactory().getDms("dms-pers1");
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider(dms, testSupport.httpClientFacade());
+        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2023-08-02"));
