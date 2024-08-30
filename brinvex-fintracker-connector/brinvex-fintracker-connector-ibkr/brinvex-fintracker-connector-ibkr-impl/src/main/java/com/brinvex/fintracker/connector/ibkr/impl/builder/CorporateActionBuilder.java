@@ -44,7 +44,7 @@ public class CorporateActionBuilder {
         Assert.notNull(assetSubCategory);
         Assert.notNullNotBlank(symbol);
         Assert.notNull(type);
-        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.matches(currency, Regex.Pattern.CCY.pattern());
         Assert.notNull(amount);
         Assert.notNull(value);
         Assert.notNull(quantity);

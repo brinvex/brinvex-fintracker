@@ -50,7 +50,7 @@ class IbkrPtfProgressOnlineTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void portfolioProgress() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-online1")).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-online1")).get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
 
         IbkrCredentials ibkrCredentials = new IbkrCredentials(

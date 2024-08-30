@@ -51,7 +51,7 @@ public class TradeBuilder {
     private ZonedDateTime orderTime;
 
     public Trade build() {
-        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.matches(currency, Regex.Pattern.CCY.pattern());
         Assert.notNull(assetCategory);
         Assert.notNullNotBlank(symbol);
         Assert.notNullNotBlank(description);

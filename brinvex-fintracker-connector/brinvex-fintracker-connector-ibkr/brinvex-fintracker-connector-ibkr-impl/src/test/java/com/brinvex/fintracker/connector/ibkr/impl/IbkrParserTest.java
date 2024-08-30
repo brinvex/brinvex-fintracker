@@ -47,7 +47,7 @@ class IbkrParserTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseActivity() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
         IbkrDms dms = ibkrFactory.dms();
         List<ActivityDocKey> docKeys = dms.getActivityDocKeys(ibkrTestAccount1, null, null);
         assertFalse(docKeys.isEmpty());
@@ -75,7 +75,7 @@ class IbkrParserTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseTradeConfirm() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers2")).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers2")).get(IbkrModule.class);
         IbkrDms dms = ibkrFactory.dms();
         List<TradeConfirmDocKey> docKeys = dms.getTradeConfirmDocKeys(ibkrTestAccount1, null, null);
         assertFalse(docKeys.isEmpty());
@@ -106,7 +106,7 @@ class IbkrParserTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void parseEquitySummaries() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
         IbkrDms dms = ibkrFactory.dms();
         IbkrStatementParser parser = ibkrFactory.statementParser();
         ActivityDocKey docKey = new ActivityDocKey(ibkrTestAccount1, parse("2022-08-03"), parse("2023-08-02"));

@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.brinvex.fintracker</groupId>
         <artifactId>brinvex-fintracker</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.11</version>
     </parent>
 
     <artifactId>brinvex-fintracker-api</artifactId>
@@ -15,6 +15,11 @@
         <dependency>
             <groupId>com.brinvex.util</groupId>
             <artifactId>brinvex-util-dms-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
         </dependency>
 
         <dependency>

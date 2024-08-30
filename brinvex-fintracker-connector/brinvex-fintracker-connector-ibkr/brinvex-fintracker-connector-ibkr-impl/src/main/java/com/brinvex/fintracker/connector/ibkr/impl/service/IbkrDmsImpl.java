@@ -1,10 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
+import com.brinvex.fintracker.api.exception.StorageException;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.api.exception.StorageException;
 import com.brinvex.util.dms.api.Dms;
 
 import java.time.LocalDate;
@@ -13,11 +13,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.naturalOrder;
@@ -32,7 +34,7 @@ public class IbkrDmsImpl implements IbkrDms {
         private static final Pattern tcDmsDocPattern = Pattern.compile("(\\w{8,16})-TC-(\\d{8})-(\\d{6})\\.xml");
     }
 
-    private final com.brinvex.util.dms.api.Dms dms;
+    private final Dms dms;
 
     public IbkrDmsImpl(Dms dms) {
         this.dms = dms;
@@ -91,16 +93,16 @@ public class IbkrDmsImpl implements IbkrDms {
     }
 
     @Override
-    public TradeConfirmDocKey getUniqueTradeConfirmDocKey(String accountId, LocalDate day) {
-        List<TradeConfirmDocKey> docKeys = getTradeConfirmDocKeys(accountId, day, day);
+    public TradeConfirmDocKey getUniqueTradeConfirmDocKey(String accountId, LocalDate date) {
+        List<TradeConfirmDocKey> docKeys = getTradeConfirmDocKeys(accountId, date, date);
         int docKeysSize = docKeys.size();
         return switch (docKeysSize) {
             case 0 -> null;
             case 1 -> docKeys.getFirst();
             default -> throw new StorageException((
                     "Expecting one but found %s tcDocKeys matching " +
-                    "accountId=%s, day=%s")
-                    .formatted(docKeysSize, accountId, day));
+                    "accountId=%s, date=%s")
+                    .formatted(docKeysSize, accountId, date));
         };
     }
 
@@ -149,6 +151,21 @@ public class IbkrDmsImpl implements IbkrDms {
         dms.delete(directory, fileKey);
     }
 
+    @Override
+    public void putMetaProperties(String accountId, String metaFileName, Map<String, String> metaProperties) {
+        String directory = getDirectory(accountId);
+        dms.put(directory, metaFileName, metaProperties);
+    }
+
+    @Override
+    public Map<String, String> getMetaProperties(String accountId, String metaFileName) {
+        String directory = getDirectory(accountId);
+        if (dms.exists(directory, metaFileName)) {
+            return Map.copyOf(dms.getPropertiesContent(directory, metaFileName));
+        }
+        return emptyMap();
+    }
+
     private String constructFileKey(IbkrDocKey docKey) {
         return switch (docKey) {
             case ActivityDocKey actDocKey -> "%s-ACT-%s-%s.xml".formatted(
@@ -158,7 +175,7 @@ public class IbkrDmsImpl implements IbkrDms {
             );
             case TradeConfirmDocKey tcDocKey -> "%s-TC-%s-%s.xml".formatted(
                     tcDocKey.accountId(),
-                    Lazy.dmsDocDf.format(tcDocKey.day()),
+                    Lazy.dmsDocDf.format(tcDocKey.date()),
                     Lazy.dmsDocTf.format(tcDocKey.whenGenerated())
             );
         };

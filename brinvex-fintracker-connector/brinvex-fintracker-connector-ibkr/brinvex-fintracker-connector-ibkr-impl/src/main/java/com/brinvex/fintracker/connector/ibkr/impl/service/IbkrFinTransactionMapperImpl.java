@@ -4,11 +4,9 @@ import com.brinvex.fintracker.api.exception.NotYetImplementedException;
 import com.brinvex.fintracker.api.model.domain.Asset;
 import com.brinvex.fintracker.api.model.domain.AssetType;
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.api.model.domain.FinTransaction.FinTransactionBuilder;
 import com.brinvex.fintracker.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.api.util.Regex;
-import com.brinvex.fintracker.api.model.builder.AssetBuilder;
-import com.brinvex.fintracker.api.model.builder.FinTransactionBuilder;
-import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.BuySell;
@@ -20,6 +18,7 @@ import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.TradeConfirm;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import com.brinvex.fintracker.connector.ibkr.impl.builder.TradeBuilder;
+import com.brinvex.util.java.validation.Assert;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -75,12 +74,13 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
             BigDecimal amount = cashTran.amount();
 
             FinTransactionBuilder finTranBldr = switch (cashTranType) {
-                case DEPOSITS_WITHDRAWALS -> new FinTransactionBuilder()
+                case DEPOSITS_WITHDRAWALS -> FinTransaction.builder()
                         .type(amount.compareTo(ZERO) > 0 ? DEPOSIT : WITHDRAWAL)
                         .extraType(DEPOSITS_WITHDRAWALS.name())
                         .qty(ZERO)
                         .grossValue(amount)
                         .netValue(amount)
+                        .tax(ZERO)
                         .fee(ZERO);
                 case DIVIDENDS, PAYMENT_IN_LIEU_OF_DIVIDENDS -> {
                     String reportDateAndActionId = reportDateAndActionIdConcat.apply(cashTran);
@@ -112,20 +112,20 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
 
                     String extraTranType = switch (cashTranType) {
                         case DIVIDENDS -> {
-                            Assert.contains(cashTran.description(), "CASH DIVIDEND");
+                            Assert.isTrue(cashTran.description().contains("CASH DIVIDEND"));
                             yield "CASH DIVIDEND";
                         }
                         case PAYMENT_IN_LIEU_OF_DIVIDENDS -> {
-                            Assert.contains(cashTran.description(), "PAYMENT IN LIEU OF DIVIDEND (Ordinary Dividend)");
+                            Assert.isTrue(cashTran.description().contains("PAYMENT IN LIEU OF DIVIDEND (Ordinary Dividend)"));
                             yield "PAYMENT_IN_LIEU_OF_DIVIDENDS";
                         }
                         default -> throw new AssertionError("Unreachable");
                     };
 
-                    yield new FinTransactionBuilder()
-                            .type(FinTransactionType.DIVIDEND)
+                    yield FinTransaction.builder()
+                            .type(FinTransactionType.CASH_DIVIDEND)
                             .extraType(extraTranType)
-                            .asset(new AssetBuilder()
+                            .asset(Asset.builder()
                                     .type(toAssetType(cashTran.assetCategory(), cashTran.assetSubCategory()))
                                     .extraType("%s/%s".formatted(cashTran.assetCategory(), cashTran.assetSubCategory()))
                                     .country(detectCountryByExchange(cashTran.listingExchange()))
@@ -140,11 +140,11 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                             .tax(tax);
                 }
                 case WITHHOLDING_TAX -> {
-                    Assert.before(cashTran.settleDate(), cashTran.reportDate());
-                    yield new FinTransactionBuilder()
+                    Assert.isTrue(cashTran.settleDate().isBefore(cashTran.reportDate()));
+                    yield FinTransaction.builder()
                             .type(FinTransactionType.TAX)
                             .extraType(WITHHOLDING_TAX.name())
-                            .asset(new AssetBuilder()
+                            .asset(Asset.builder()
                                     .type(toAssetType(cashTran.assetCategory(), cashTran.assetSubCategory()))
                                     .extraType("%s/%s".formatted(cashTran.assetCategory(), cashTran.assetSubCategory()))
                                     .country(detectCountryByExchange(cashTran.listingExchange()))
@@ -161,11 +161,11 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                 case OTHER_FEES, BROKER_INTEREST_PAID, BROKER_FEES -> {
                     Assert.isNull(cashTran.assetCategory());
                     Assert.isNull(cashTran.assetSubCategory());
-                    Assert.blank(cashTran.listingExchange());
-                    Assert.blank(cashTran.symbol());
-                    Assert.blank(cashTran.figi());
-                    Assert.blank(cashTran.isin());
-                    yield new FinTransactionBuilder()
+                    Assert.empty(cashTran.listingExchange());
+                    Assert.empty(cashTran.symbol());
+                    Assert.empty(cashTran.figi());
+                    Assert.empty(cashTran.isin());
+                    yield FinTransaction.builder()
                             .type(FinTransactionType.FEE)
                             .extraType(cashTranType.name())
                             .grossValue(ZERO)
@@ -210,14 +210,15 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                         case SELL -> {
                             String sellCcy = trade.symbol().substring(0, 3);
                             String buyCcy = trade.symbol().substring(4);
-                            Assert.matches(sellCcy, Regex.CCY.pattern());
-                            Assert.matches(buyCcy, Regex.CCY.pattern());
+                            Assert.matches(sellCcy, Regex.Pattern.CCY.pattern());
+                            Assert.matches(buyCcy, Regex.Pattern.CCY.pattern());
                             Assert.equal(buyCcy, ccy);
                             Assert.equal(sellCcy, ibCommissionCcy);
+                            Assert.zero(trade.taxes());
                             if (!ccy.equals(ibCommissionCcy)) {
-                                yield new FinTransactionBuilder()
+                                yield FinTransaction.builder()
                                         .type(FinTransactionType.FX_BUY)
-                                        .asset(new AssetBuilder()
+                                        .asset(Asset.builder()
                                                 .type(AssetType.CASH)
                                                 .symbol(buyCcy)
                                                 .build())
@@ -226,7 +227,8 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                                         .price(trade.tradePrice())
                                         .grossValue(trade.quantity())
                                         .netValue(trade.quantity().add(trade.ibCommission()))
-                                        .fee(trade.ibCommission());
+                                        .fee(trade.ibCommission())
+                                        .tax(ZERO);
                             } else {
                                 throw new NotYetImplementedException("ccy=%s, ibCommissionCcy=%s, trade=%s"
                                         .formatted(ccy, ibCommissionCcy, trade));
@@ -237,10 +239,11 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                             String sellCcy = trade.symbol().substring(4);
                             Assert.equal(sellCcy, ccy);
                             Assert.equal(buyCcy, ibCommissionCcy);
+                            Assert.zero(trade.taxes());
                             if (!Objects.equals(ccy, ibCommissionCcy)) {
-                                yield new FinTransactionBuilder()
+                                yield FinTransaction.builder()
                                         .type(FinTransactionType.FX_BUY)
-                                        .asset(new AssetBuilder()
+                                        .asset(Asset.builder()
                                                 .type(AssetType.CASH)
                                                 .symbol(buyCcy)
                                                 .build())
@@ -249,33 +252,38 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                                         .price(trade.tradePrice())
                                         .grossValue(trade.proceeds())
                                         .netValue(trade.proceeds().add(trade.ibCommission()))
-                                        .fee(trade.ibCommission());
+                                        .fee(trade.ibCommission())
+                                        .tax(ZERO);
                             } else {
                                 throw new NotYetImplementedException("ccy=%s, ibCommissionCcy=%s, trade=%s"
                                         .formatted(ccy, ibCommissionCcy, trade));
                             }
                         }
                     };
-                    case STK -> new FinTransactionBuilder()
-                            .type(switch (trade.buySell()) {
-                                case BUY -> BUY;
-                                case SELL -> SELL;
-                            })
-                            .extraType(trade.transactionType().name())
-                            .asset(new AssetBuilder()
-                                    .type(toAssetType(trade.assetCategory(), trade.assetSubCategory()))
-                                    .extraType("%s/%s".formatted(trade.assetCategory(), trade.assetSubCategory()))
-                                    .country(detectCountryByExchange(trade.listingExchange()))
-                                    .symbol(stripToNull(trade.symbol()))
-                                    .countryFigi(stripToNull(trade.figi()))
-                                    .isin(stripToNull(trade.isin()))
-                                    .build())
-                            .ccy(ccy)
-                            .qty(trade.quantity())
-                            .price(trade.tradePrice())
-                            .grossValue(trade.proceeds())
-                            .netValue(trade.netCash())
-                            .fee(fees);
+                    case STK -> {
+                        Assert.zero(trade.taxes());
+                        yield FinTransaction.builder()
+                                .type(switch (trade.buySell()) {
+                                    case BUY -> BUY;
+                                    case SELL -> SELL;
+                                })
+                                .extraType(trade.transactionType().name())
+                                .asset(Asset.builder()
+                                        .type(toAssetType(trade.assetCategory(), trade.assetSubCategory()))
+                                        .extraType("%s/%s".formatted(trade.assetCategory(), trade.assetSubCategory()))
+                                        .country(detectCountryByExchange(trade.listingExchange()))
+                                        .symbol(stripToNull(trade.symbol()))
+                                        .countryFigi(stripToNull(trade.figi()))
+                                        .isin(stripToNull(trade.isin()))
+                                        .build())
+                                .ccy(ccy)
+                                .qty(trade.quantity())
+                                .price(trade.tradePrice())
+                                .grossValue(trade.proceeds())
+                                .netValue(trade.netCash())
+                                .fee(fees)
+                                .tax(ZERO);
+                    }
                 };
                 case FRAC_SHARE -> {
                     Assert.zero(trade.ibCommission());
@@ -283,12 +291,12 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                     Assert.equal(trade.buySell(), BuySell.SELL);
                     BigDecimal grossValue = trade.proceeds();
                     Assert.positive(grossValue);
-                    Assert.opposite(grossValue, trade.tradeMoney());
+                    Assert.equal(grossValue, trade.tradeMoney().negate());
                     Assert.equal(grossValue, trade.netCash());
                     Assert.zero(trade.taxes());
-                    yield new FinTransactionBuilder()
+                    yield FinTransaction.builder()
                             .type(FinTransactionType.SELL)
-                            .asset(new AssetBuilder()
+                            .asset(Asset.builder()
                                     .type(AssetType.STOCK)
                                     .country(detectCountryByExchange(trade.listingExchange()))
                                     .symbol(stripToNull(trade.symbol()))
@@ -300,7 +308,8 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                             .price(trade.tradePrice())
                             .grossValue(grossValue)
                             .netValue(grossValue)
-                            .fee(trade.ibCommission());
+                            .fee(trade.ibCommission())
+                            .tax(ZERO);
                 }
             };
 
@@ -367,7 +376,7 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
         SequencedMap<String, FinTransaction> resultTrans = new LinkedHashMap<>();
 
         for (CorporateAction corpAction : corpActions) {
-            Asset asset = new AssetBuilder()
+            Asset asset = Asset.builder()
                     .type(toAssetType(corpAction.assetCategory(), corpAction.assetSubCategory()))
                     .extraType("%s/%s".formatted(corpAction.assetCategory(), corpAction.assetSubCategory()))
                     .country(corpAction.issuerCountryCode())
@@ -378,8 +387,8 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
 
             FinTransactionBuilder tranBldr = switch (corpAction.type()) {
                 case MERGED_ACQUISITION -> {
-                    Assert.contains(corpAction.description(), "MERGED(Acquisition)");
-                    yield new FinTransactionBuilder()
+                    Assert.isTrue(corpAction.description().contains("MERGED(Acquisition)"));
+                    yield FinTransaction.builder()
                             .extraType(CorporateActionType.MERGED_ACQUISITION.name())
                             .qty(corpAction.quantity())
                             .price(corpAction.proceeds().divide(corpAction.quantity().abs(), 2, RoundingMode.HALF_UP))
@@ -387,26 +396,24 @@ public class IbkrFinTransactionMapperImpl implements IbkrFinTransactionMapper {
                             .netValue(corpAction.proceeds());
                 }
                 case SPIN_OFF -> {
-                    Assert.contains(corpAction.description(), "SPINOFF");
+                    Assert.isTrue(corpAction.description().contains("SPINOFF"));
                     Assert.zero(corpAction.amount());
                     Assert.zero(corpAction.proceeds());
                     Assert.zero(corpAction.value());
-                    yield new FinTransactionBuilder()
+                    yield FinTransaction.builder()
                             .extraType(CorporateActionType.SPIN_OFF.name())
                             .qty(corpAction.quantity())
-                            .price(ZERO)
                             .grossValue(ZERO)
                             .netValue(ZERO);
                 }
                 case SPLIT -> {
-                    Assert.contains(corpAction.description(), "SPLIT");
+                    Assert.isTrue(corpAction.description().contains("SPLIT"));
                     Assert.zero(corpAction.amount());
                     Assert.zero(corpAction.proceeds());
                     Assert.zero(corpAction.value());
-                    yield new FinTransactionBuilder()
+                    yield FinTransaction.builder()
                             .extraType(CorporateActionType.SPLIT.name())
                             .qty(corpAction.quantity())
-                            .price(ZERO)
                             .grossValue(ZERO)
                             .netValue(ZERO);
                 }

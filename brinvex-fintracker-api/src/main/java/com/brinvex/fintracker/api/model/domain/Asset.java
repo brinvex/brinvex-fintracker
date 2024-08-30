@@ -1,10 +1,14 @@
 package com.brinvex.fintracker.api.model.domain;
 
 import lombok.Builder;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 
+import static java.util.Objects.requireNonNull;
+
 @Builder
+@Accessors(fluent = true, chain = true)
 public record Asset(
         String id,
         AssetType type,
@@ -16,4 +20,8 @@ public record Asset(
         String extraType,
         String extraDetail
 ) implements Serializable {
+
+    public Asset {
+        requireNonNull(type);
+    }
 }

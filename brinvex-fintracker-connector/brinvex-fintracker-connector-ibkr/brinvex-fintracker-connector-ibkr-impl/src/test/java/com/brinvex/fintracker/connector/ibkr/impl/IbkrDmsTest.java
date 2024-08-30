@@ -39,7 +39,7 @@ class IbkrDmsTest {
     @Test
     void dmsConsistency() {
         String dmsWorkspace = "dms-tmp1";
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, dmsWorkspace)).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, dmsWorkspace)).get(IbkrModule.class);
         DmsFactory dmsFactory = testSupport.dmsFactory();
         com.brinvex.util.dms.api.Dms dms = dmsFactory.getDms(dmsWorkspace);
         dms.resetWorkspace();

@@ -1,12 +1,16 @@
 package com.brinvex.fintracker.core.impl.infra;
 
-import com.brinvex.fintracker.api.FinTrackerApplication;
+import com.brinvex.fintracker.api.FinTracker;
 import com.brinvex.fintracker.api.FinTrackerConfig;
 import com.brinvex.fintracker.api.FinTrackerModule;
 import com.brinvex.fintracker.api.facade.HttpClientFacade;
+import com.brinvex.fintracker.api.facade.ValidatorFacade;
 import com.brinvex.fintracker.core.impl.facade.HttpClientFacadeImpl;
+import com.brinvex.fintracker.core.impl.facade.ValidatorFacadeImpl;
 import com.brinvex.util.dms.api.DmsFactory;
 import com.brinvex.util.java.validation.Assert;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +21,9 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
-public class FinTrackerApplicationImpl implements FinTrackerApplication {
+public class FinTrackerImpl implements FinTracker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FinTrackerApplicationImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FinTrackerImpl.class);
 
     private final FinTrackerConfig config;
 
@@ -27,11 +31,13 @@ public class FinTrackerApplicationImpl implements FinTrackerApplication {
 
     private volatile HttpClientFacade httpClientFacade;
 
+    private volatile ValidatorFacade validator;
+
     private final Map<Class<?>, FinTrackerModule> modules = new LinkedHashMap<>();
 
     private final Map<Class<?>, Object> singletons = new LinkedHashMap<>();
 
-    public FinTrackerApplicationImpl(
+    public FinTrackerImpl(
             FinTrackerConfig config
     ) {
         LOG.debug("Instantiating FinTrackerApplicationImpl with config: {}", config);
@@ -69,6 +75,27 @@ public class FinTrackerApplicationImpl implements FinTrackerApplication {
             }
         }
         return httpClientFacade;
+    }
+
+    @Override
+    public ValidatorFacade validator() {
+        if (validator == null) {
+            synchronized (this) {
+                if (validator == null) {
+                    Supplier<ValidatorFactory> validatorFactorySupplier = config.validatorFactory();
+                    jakarta.validation.Validator jakartaValidator;
+                    if (validatorFactorySupplier != null) {
+                        jakartaValidator = validatorFactorySupplier.get().getValidator();
+                    } else {
+                        try (ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
+                            jakartaValidator = validatorFactory.getValidator();
+                        }
+                    }
+                    validator = new ValidatorFacadeImpl(jakartaValidator);
+                }
+            }
+        }
+        return validator;
     }
 
     @Override

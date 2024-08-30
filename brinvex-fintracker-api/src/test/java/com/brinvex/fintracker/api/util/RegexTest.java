@@ -14,14 +14,14 @@ public class RegexTest {
     @Test
     void ccy() {
 
-        assertFalse(Regex.CCY.matches(""));
-        assertFalse(Regex.CCY.matches(" "));
-        assertFalse(Regex.CCY.matches("\n"));
-        assertFalse(Regex.CCY.matches("\t"));
-        assertFalse(Regex.CCY.matches("AB "));
-        assertFalse(Regex.CCY.matches(" AB"));
-        assertFalse(Regex.CCY.matches(" A1"));
-        assertTrue(Regex.CCY.matches("ABC"));
-        assertFalse(Regex.CCY.matches("abc"));
+        assertFalse(Regex.Pattern.CCY.matches(""));
+        assertFalse(Regex.Pattern.CCY.matches(" "));
+        assertFalse(Regex.Pattern.CCY.matches("\n"));
+        assertFalse(Regex.Pattern.CCY.matches("\t"));
+        assertFalse(Regex.Pattern.CCY.matches("AB "));
+        assertFalse(Regex.Pattern.CCY.matches(" AB"));
+        assertFalse(Regex.Pattern.CCY.matches(" A1"));
+        assertTrue(Regex.Pattern.CCY.matches("ABC"));
+        assertFalse(Regex.Pattern.CCY.matches("abc"));
     }
 }

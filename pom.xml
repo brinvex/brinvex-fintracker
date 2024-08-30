@@ -10,13 +10,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.2</version>
+        <version>3.3.3</version>
         <relativePath/>
     </parent>
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>0.0.4</version>
+    <version>0.0.11</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
@@ -65,8 +65,8 @@
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
-        <brinvex-util-dms.version>1.0.7</brinvex-util-dms.version>
-        <brinvex-util-java.version>1.56.0</brinvex-util-java.version>
+        <brinvex-util-dms.version>1.0.8</brinvex-util-dms.version>
+        <brinvex-util-java.version>1.57.2</brinvex-util-java.version>
 
         <github.global.server>github</github.global.server>
     </properties>

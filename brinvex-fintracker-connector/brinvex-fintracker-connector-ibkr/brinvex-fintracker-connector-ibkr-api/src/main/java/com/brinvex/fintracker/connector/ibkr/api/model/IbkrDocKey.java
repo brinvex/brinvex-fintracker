@@ -32,13 +32,13 @@ public sealed interface IbkrDocKey extends Serializable {
     record TradeConfirmDocKey(
             @Override
             String accountId,
-            LocalDate day,
+            LocalDate date,
             LocalTime whenGenerated
     ) implements IbkrDocKey, Comparable<TradeConfirmDocKey>, Serializable {
 
         private static final Comparator<TradeConfirmDocKey> COMPARATOR =
                 comparing(TradeConfirmDocKey::accountId)
-                        .thenComparing(TradeConfirmDocKey::day)
+                        .thenComparing(TradeConfirmDocKey::date)
                         .thenComparing(TradeConfirmDocKey::whenGenerated);
 
         @Override
@@ -46,4 +46,5 @@ public sealed interface IbkrDocKey extends Serializable {
             return COMPARATOR.compare(this, other);
         }
     }
+
 }

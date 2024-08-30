@@ -22,7 +22,7 @@ public class EquitySummaryBuilder {
 
     public EquitySummary build() {
         Assert.notNull(reportDate);
-        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.matches(currency, Regex.Pattern.CCY.pattern());
         Assert.notNull(cash);
         Assert.notNull(stock);
         Assert.notNull(dividendAccruals);

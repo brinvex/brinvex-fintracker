@@ -3,10 +3,8 @@ package com.brinvex.fintracker.connector.ibkr.impl.service;
 import com.brinvex.fintracker.api.exception.AssistanceRequiredException;
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.api.model.general.DayAmount;
+import com.brinvex.fintracker.api.model.general.DateAmount;
 import com.brinvex.fintracker.api.provider.PtfProgressProvider;
-import com.brinvex.util.java.validation.Assert;
-import com.brinvex.util.java.validation.Validate;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrCredentials;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDocKey;
@@ -15,18 +13,23 @@ import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.A
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.TradeConfirmStatement;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
+import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
+import com.brinvex.util.java.validation.Assert;
+import com.brinvex.util.java.validation.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -39,12 +42,16 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
+import static java.util.Objects.requireNonNullElse;
 
 public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, PtfProgressProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(IbkrPtfProgressProviderImpl.class);
 
     private static final ZoneId IBKR_ZONE_ID = ZoneId.of("America/New_York");
+
+    private static final String META_FILE_NAME = IbkrPtfProgressProviderImpl.class.getSimpleName() + ".properties";
+    private static final String META_PROP_KEY_ACT_LAST_FETCHED = "activityLastFetched";
 
     private final IbkrDms dms;
 
@@ -161,21 +168,37 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                                 "accountId=%s, activityFlexQueryId=%s, fromDateIncl=%s, toDateIncl=%s, fetchFromDateIncl=%s, ibkrToday=%s"
                                         .formatted(accountId, credentials.activityFlexQueryId(), fromDateIncl, toDateIncl, fetchFromDateIncl, ibkrToday));
                     }
-                    String fetchedContent = fetcher.fetchFlexStatement(credentials.token(), credentials.activityFlexQueryId(), 4, ofSeconds(5));
-                    ActivityStatement fetchedActStatement = parser.parseActivityStatement(fetchedContent);
-                    ActivityDocKey fetchedDocKey = new ActivityDocKey(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
-                    boolean useful = dms.putStatementIfUseful(fetchedDocKey, fetchedContent);
-                    if (useful) {
-                        LOG.debug("getPortfolioProgress - saved fetched statement - {}", fetchedDocKey);
-                    } else {
-                        LOG.debug("getPortfolioProgress - fetched statement is useless - {}", fetchedDocKey);
-                    }
-                    {
-                        List<TradeConfirmDocKey> unnecessaryTcDocKeys = dms.getTradeConfirmDocKeys(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
-                        for (TradeConfirmDocKey unnecessaryTcDocKey : unnecessaryTcDocKeys) {
-                            LOG.debug("getPortfolioProgress - deleting unnecessary statement - {}", unnecessaryTcDocKey);
-                            dms.delete(unnecessaryTcDocKey);
+
+                    LocalDateTime now = LocalDateTime.now();
+                    Map<String, String> metaProperties = dms.getMetaProperties(accountId, META_FILE_NAME);
+                    LocalDateTime actLastFetched = requireNonNullElse(
+                            nullSafe(metaProperties.get(META_PROP_KEY_ACT_LAST_FETCHED), LocalDateTime::parse),
+                            LocalDateTime.MIN);
+                    boolean actStale = actLastFetched.plus(staleTolerance).isBefore(now);
+                    if (actStale) {
+                        String fetchedContent = fetcher.fetchFlexStatement(credentials.token(), credentials.activityFlexQueryId(), 4, ofSeconds(5));
+                        metaProperties = new LinkedHashMap<>(metaProperties);
+                        metaProperties.put(META_PROP_KEY_ACT_LAST_FETCHED, now.toString());
+                        dms.putMetaProperties(accountId, META_FILE_NAME, metaProperties);
+
+                        ActivityStatement fetchedActStatement = parser.parseActivityStatement(fetchedContent);
+                        ActivityDocKey fetchedDocKey = new ActivityDocKey(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
+                        boolean useful = dms.putStatementIfUseful(fetchedDocKey, fetchedContent);
+                        if (useful) {
+                            LOG.debug("getPortfolioProgress - saved fetched statement - {}", fetchedDocKey);
+                        } else {
+                            LOG.debug("getPortfolioProgress - fetched statement is useless - {}", fetchedDocKey);
                         }
+                        {
+                            List<TradeConfirmDocKey> unnecessaryTcDocKeys = dms.getTradeConfirmDocKeys(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
+                            for (TradeConfirmDocKey unnecessaryTcDocKey : unnecessaryTcDocKeys) {
+                                LOG.debug("getPortfolioProgress - deleting unnecessary statement - {}", unnecessaryTcDocKey);
+                                dms.delete(unnecessaryTcDocKey);
+                            }
+                        }
+                    } else {
+                        LOG.debug("getPortfolioProgress - skipping activity fetch - accountId={}, actLastFetched={}, staleTolerance={}, now={}",
+                                accountId, actLastFetched, staleTolerance, now);
                     }
                 }
             }
@@ -208,7 +231,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                         TradeConfirmDocKey oldTcDocKey = dms.getUniqueTradeConfirmDocKey(accountId, tcDate);
                         if (oldTcDocKey != null) {
                             ZonedDateTime ibkrNow = ZonedDateTime.now(IBKR_ZONE_ID);
-                            ZonedDateTime oldWhenGenerated = ZonedDateTime.of(oldTcDocKey.day(), oldTcDocKey.whenGenerated(), IBKR_ZONE_ID);
+                            ZonedDateTime oldWhenGenerated = ZonedDateTime.of(oldTcDocKey.date(), oldTcDocKey.whenGenerated(), IBKR_ZONE_ID);
                             boolean oldIsStale = oldWhenGenerated.plus(staleTolerance).isBefore(ibkrNow);
                             if (oldIsStale) {
                                 LOG.debug("getPortfolioProgress - old is stale - oldTcDocKey={}, staleTolerance={}, ibkrNow={}", oldTcDocKey, staleTolerance, ibkrNow);
@@ -251,7 +274,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                 .sorted(comparing(FinTransaction::date))
                 .toList();
 
-        SortedMap<LocalDate, DayAmount> navs = new TreeMap<>();
+        SortedMap<LocalDate, DateAmount> navs = new TreeMap<>();
         String navsCcy;
         {
             List<EquitySummary> eqSummaries = mergedActStatement.equitySummaries();
@@ -265,7 +288,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                 if (date.isBefore(fromDateIncl) || date.isAfter(toDateIncl)) {
                     continue;
                 }
-                DayAmount old = navs.put(date, new DayAmount(date, equitySummary.total()));
+                DateAmount old = navs.put(date, new DateAmount(date, equitySummary.total()));
                 if (old != null) {
                     throw new IllegalStateException("Duplicate EquitySummary date: %s, %s".formatted(old, equitySummary));
                 }

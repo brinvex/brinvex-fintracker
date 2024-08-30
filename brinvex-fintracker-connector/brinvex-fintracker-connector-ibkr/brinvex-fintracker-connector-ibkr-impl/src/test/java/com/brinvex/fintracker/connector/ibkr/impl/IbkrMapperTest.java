@@ -41,7 +41,7 @@ class IbkrMapperTest {
     @EnabledIf("ibkrTestAccount1")
     @Test
     void transactionMapping() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
         IbkrStatementParser parser = ibkrFactory.statementParser();
         IbkrStatementMerger merger = ibkrFactory.statementMerger();
         IbkrFinTransactionMapper finTranMapper = ibkrFactory.finTransactionMapper();

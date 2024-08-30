@@ -1,6 +1,7 @@
 package com.brinvex.fintracker.api;
 
 import com.brinvex.util.dms.api.DmsFactory;
+import jakarta.validation.ValidatorFactory;
 
 import java.util.function.Supplier;
 
@@ -8,9 +9,11 @@ public interface FinTrackerConfigBuilder {
 
     FinTrackerConfig build();
 
+    FinTrackerConfigBuilder property(String key, String value);
+
     FinTrackerConfigBuilder dmsFactory(Supplier<DmsFactory> dmsFactory);
 
-    FinTrackerConfigBuilder property(String key, String value);
+    FinTrackerConfigBuilder validatorFactory(Supplier<ValidatorFactory> validatorFactory);
 
     static FinTrackerConfigBuilder createDefault() {
         try {
@@ -21,5 +24,4 @@ public interface FinTrackerConfigBuilder {
             throw new RuntimeException(e);
         }
     }
-
 }

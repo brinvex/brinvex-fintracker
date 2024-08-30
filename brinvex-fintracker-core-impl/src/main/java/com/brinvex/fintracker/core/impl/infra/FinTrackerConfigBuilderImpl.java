@@ -3,6 +3,7 @@ package com.brinvex.fintracker.core.impl.infra;
 import com.brinvex.fintracker.api.FinTrackerConfig;
 import com.brinvex.fintracker.api.FinTrackerConfigBuilder;
 import com.brinvex.util.dms.api.DmsFactory;
+import jakarta.validation.ValidatorFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,9 +15,17 @@ public class FinTrackerConfigBuilderImpl implements FinTrackerConfigBuilder {
 
     private Supplier<DmsFactory> dmsFactory;
 
+    private Supplier<ValidatorFactory> validatorFactory;
+
     @Override
     public FinTrackerConfig build() {
-        return new FinTrackerConfig(properties, dmsFactory);
+        return new FinTrackerConfig(properties, dmsFactory, validatorFactory);
+    }
+
+    @Override
+    public FinTrackerConfigBuilder property(String key, String value) {
+        properties.put(key, value);
+        return this;
     }
 
     @Override
@@ -26,10 +35,8 @@ public class FinTrackerConfigBuilderImpl implements FinTrackerConfigBuilder {
     }
 
     @Override
-    public FinTrackerConfigBuilder property(String key, String value) {
-        properties.put(key, value);
+    public FinTrackerConfigBuilder validatorFactory(Supplier<ValidatorFactory> validatorFactory) {
+        this.validatorFactory = validatorFactory;
         return this;
     }
-
-
 }

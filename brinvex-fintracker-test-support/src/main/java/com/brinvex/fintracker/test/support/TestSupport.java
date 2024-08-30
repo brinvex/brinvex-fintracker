@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.test.support;
 
-import com.brinvex.fintracker.api.FinTrackerApplication;
+import com.brinvex.fintracker.api.FinTracker;
 import com.brinvex.fintracker.api.FinTrackerConfig;
 import com.brinvex.fintracker.api.FinTrackerConfigBuilder;
 import com.brinvex.util.dms.api.DmsFactory;
@@ -40,22 +40,22 @@ public class TestSupport {
         this.module = module;
     }
 
-    public FinTrackerApplication app() {
-        return app(Collections.emptyMap());
+    public FinTracker finTracker() {
+        return finTracker(Collections.emptyMap());
     }
 
-    public FinTrackerApplication app(Map<String, String> properties) {
-        return app(configBuilder -> {
+    public FinTracker finTracker(Map<String, String> properties) {
+        return finTracker(configBuilder -> {
             for (Map.Entry<String, String> e : properties.entrySet()) {
                 configBuilder.property(e.getKey(), e.getValue());
             }
         });
     }
 
-    public FinTrackerApplication app(Consumer<FinTrackerConfigBuilder> configAdjuster) {
+    public FinTracker finTracker(Consumer<FinTrackerConfigBuilder> configAdjuster) {
         FinTrackerConfigBuilder configBuilder = config();
         configAdjuster.accept(configBuilder);
-        return FinTrackerApplication.get(configBuilder.build());
+        return FinTracker.get(configBuilder.build());
     }
 
     public FinTrackerConfigBuilder config() {

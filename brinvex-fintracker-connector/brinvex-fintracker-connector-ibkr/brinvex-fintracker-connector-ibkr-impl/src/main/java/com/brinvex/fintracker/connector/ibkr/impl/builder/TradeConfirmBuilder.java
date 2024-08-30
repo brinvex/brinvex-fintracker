@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.function.Predicate;
 
 @SuppressWarnings("DuplicatedCode")
 @Setter
@@ -50,7 +49,7 @@ public class TradeConfirmBuilder {
     private String extraDateTimeStr;
 
     public TradeConfirm build() {
-        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.matches(currency, Regex.Pattern.CCY.pattern());
         Assert.notNull(assetCategory);
         Assert.notNullNotBlank(symbol);
         Assert.notNullNotBlank(description);

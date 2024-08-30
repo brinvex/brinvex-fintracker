@@ -2,13 +2,23 @@ package com.brinvex.fintracker.api.model.domain;
 
 public enum AssetType {
 
-    CASH,
+    CASH(AssetCategory.CASH),
 
-    STOCK,
+    STOCK(AssetCategory.INSTRUMENT),
 
-    ETF,
+    ETF(AssetCategory.INSTRUMENT),
 
-    FUND,
+    FUND(AssetCategory.INSTRUMENT),
 
-    BOND,
+    BOND(AssetCategory.INSTRUMENT);
+
+    private final AssetCategory category;
+
+    AssetType(AssetCategory category) {
+        this.category = category;
+    }
+
+    public AssetCategory category() {
+        return category;
+    }
 }

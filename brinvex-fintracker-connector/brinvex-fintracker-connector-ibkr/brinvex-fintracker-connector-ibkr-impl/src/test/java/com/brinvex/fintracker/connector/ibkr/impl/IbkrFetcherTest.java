@@ -42,7 +42,7 @@ class IbkrFetcherTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void fetch() throws InterruptedException {
-        IbkrModule ibkrFactory = testSupport.app().get(IbkrModule.class);
+        IbkrModule ibkrFactory = testSupport.finTracker().get(IbkrModule.class);
 
         IbkrFetcher fetcher = ibkrFactory.fetcher();
         IbkrStatementParser parser = ibkrFactory.statementParser();

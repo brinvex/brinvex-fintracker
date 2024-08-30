@@ -55,8 +55,12 @@ public class IbkrStatementMergerImpl implements IbkrStatementMerger {
             LocalDate toDate = statement.toDate();
 
             LocalDate expectedFromDate = resultToDate.plusDays(1);
-            Assert.equalOrAfter(expectedFromDate, fromDate, () -> "Missing period: '%s - %s', accountId=%s"
-                    .formatted(expectedFromDate, fromDate.minusDays(1), resultAccountId));
+            if (expectedFromDate.isBefore(fromDate)) {
+                throw new IllegalStateException(
+                        "Missing period: <%s, %s>, accountId=%s"
+                                .formatted(expectedFromDate, fromDate.minusDays(1), resultAccountId)
+                );
+            }
 
             if (toDate.isAfter(resultToDate)) {
                 resultToDate = toDate;

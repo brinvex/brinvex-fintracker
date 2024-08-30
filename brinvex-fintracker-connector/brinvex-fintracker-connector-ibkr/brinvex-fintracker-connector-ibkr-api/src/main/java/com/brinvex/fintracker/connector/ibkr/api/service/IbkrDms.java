@@ -7,6 +7,7 @@ import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDo
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface IbkrDms {
 
@@ -14,7 +15,7 @@ public interface IbkrDms {
 
     List<TradeConfirmDocKey> getTradeConfirmDocKeys(String accountId, LocalDate fromDateIncl, LocalDate toDateIncl);
 
-    TradeConfirmDocKey getUniqueTradeConfirmDocKey(String accountId, LocalDate day);
+    TradeConfirmDocKey getUniqueTradeConfirmDocKey(String accountId, LocalDate date);
 
     String getStatementContent(IbkrDocKey docKey);
 
@@ -24,4 +25,7 @@ public interface IbkrDms {
 
     void delete(IbkrDocKey docKey);
 
+    void putMetaProperties(String accountId, String metaFileName, Map<String, String> metaProperties);
+
+    Map<String, String> getMetaProperties(String accountId, String metaFileName);
 }

@@ -7,12 +7,12 @@ import java.util.Comparator;
 
 import static java.util.Comparator.comparing;
 
-public record DayAmount(LocalDate day, BigDecimal amount) implements Comparable<DayAmount>, Serializable {
+public record DateAmount(LocalDate date, BigDecimal amount) implements Comparable<DateAmount>, Serializable {
 
-    private static final Comparator<DayAmount> COMPARATOR = comparing(DayAmount::day);
+    private static final Comparator<DateAmount> COMPARATOR = comparing(DateAmount::date);
 
     @Override
-    public int compareTo(DayAmount other) {
+    public int compareTo(DateAmount other) {
         return COMPARATOR.compare(this, other);
     }
 }

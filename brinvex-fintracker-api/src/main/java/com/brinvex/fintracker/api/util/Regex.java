@@ -1,10 +1,8 @@
 package com.brinvex.fintracker.api.util;
 
-import java.util.regex.Pattern;
+public class Regex {
 
-public enum Regex {
-
-    CCY(Pattern.compile("[A-Z]{3}")),
+    public static final String CCY = "[A-Z]{3}";
 
     /**
      * Pattern for validating Alpha-2 country codes.
@@ -14,21 +12,26 @@ public enum Regex {
      * (e.g., "US" for the United States, "CZ" for Czech Republic).
      * </p>
      */
-    COUNTRY_2(Pattern.compile("[A-Z]{2}"));
+    public static final String COUNTRY_2 = "[A-Z]{2}";
 
-    private final Pattern pattern;
+    public enum Pattern {
 
-    Regex(Pattern pattern) {
-        this.pattern = pattern;
+        CCY(java.util.regex.Pattern.compile(Regex.CCY)),
+
+        COUNTRY_2(java.util.regex.Pattern.compile(Regex.COUNTRY_2));
+
+        private final java.util.regex.Pattern pattern;
+
+        Pattern(java.util.regex.Pattern pattern) {
+            this.pattern = pattern;
+        }
+
+        public java.util.regex.Pattern pattern() {
+            return pattern;
+        }
+
+        public boolean matches(String str) {
+            return pattern().matcher(str).matches();
+        }
     }
-
-    public Pattern pattern() {
-        return pattern;
-    }
-
-    public boolean matches(String str) {
-        return pattern().matcher(str).matches();
-    }
-
-
 }

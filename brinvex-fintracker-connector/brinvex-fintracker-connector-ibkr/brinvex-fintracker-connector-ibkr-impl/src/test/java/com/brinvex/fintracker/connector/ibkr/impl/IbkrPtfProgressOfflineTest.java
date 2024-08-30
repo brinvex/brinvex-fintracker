@@ -1,9 +1,12 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
+import com.brinvex.fintracker.api.FinTracker;
+import com.brinvex.fintracker.api.facade.ValidatorFacade;
 import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
 import com.brinvex.fintracker.test.support.SimplePtf;
 import com.brinvex.fintracker.test.support.TestSupport;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
@@ -12,6 +15,7 @@ import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrDmsImpl;
 import com.brinvex.util.dms.api.Dms;
+import jakarta.validation.ConstraintViolation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.slf4j.Logger;
@@ -52,10 +56,13 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_iterative() {
         String workspace = "dms-pers1";
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
+        FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace));
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+        ValidatorFacade validator = finTracker.validator();
+
         Dms dms = testSupport.dmsFactory().getDms(workspace);
         IbkrDms ibkrDms = new IbkrDmsImpl(dms);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
         LocalDate today = now();
 
         List<ActivityDocKey> docKeys = ibkrDms.getActivityDocKeys(ibkrTestAccount1, LocalDate.MIN, today);
@@ -63,6 +70,11 @@ class IbkrPtfProgressOfflineTest {
         for (LocalDate d = docKeys.getFirst().fromDateIncl(); d.isBefore(now()); d = d.plusMonths(1)) {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, d, today);
             assertNotNull(ptfProgress);
+
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
         }
     }
 
@@ -70,10 +82,16 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_spinOff() {
         String workspace = "dms-pers1";
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+        FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace));
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+        ValidatorFacade validator = finTracker.validator();
 
         PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-02"));
+        for (FinTransaction finTran : ptfProgress.transactions()) {
+            Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+            assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+        }
         SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
         assertEquals(0, ptf.getHoldingQty(US, "GE").compareTo(new BigDecimal(6)));
@@ -92,26 +110,36 @@ class IbkrPtfProgressOfflineTest {
     @Test
     void portfolioProgress_paymentOfLieuOfDividends() {
         String workspace = "dms-pers1";
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+        FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace));
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+        ValidatorFacade validator = finTracker.validator();
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-06-28"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(314, ptf.getTransactions().size());
             FinTransaction tran = ptf.getTransactions().get(310);
-            assertEquals(tran.type(), FinTransactionType.DIVIDEND);
+            assertEquals(tran.type(), FinTransactionType.CASH_DIVIDEND);
             assertEquals(tran.extraType(), "PAYMENT_IN_LIEU_OF_DIVIDENDS");
             assertEquals(tran.asset().symbol(), "ARCC");
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-07-15"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(326, ptf.getTransactions().size());
             FinTransaction tran = ptf.getTransactions().get(310);
-            assertEquals(tran.type(), FinTransactionType.DIVIDEND);
+            assertEquals(tran.type(), FinTransactionType.CASH_DIVIDEND);
             assertEquals(tran.extraType(), "PAYMENT_IN_LIEU_OF_DIVIDENDS");
             assertEquals(tran.asset().symbol(), "ARCC");
         }
@@ -123,12 +151,18 @@ class IbkrPtfProgressOfflineTest {
         List<FinTransaction> actAndTcTrans;
 
         {
-            IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers2")).get(IbkrModule.class);
-            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+            FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers2"));
+            IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+            ValidatorFacade validator = finTracker.validator();
 
             List<FinTransaction> actTrans1;
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-16"));
+                for (FinTransaction finTran : ptfProgress.transactions()) {
+                    Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                    assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+                }
                 SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
                 actTrans1 = ptf.getTransactions();
                 assertEquals(243, actTrans1.size());
@@ -136,11 +170,19 @@ class IbkrPtfProgressOfflineTest {
             }
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-17"));
+                for (FinTransaction finTran : ptfProgress.transactions()) {
+                    Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                    assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+                }
                 SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
                 assertEquals(actTrans1, ptf.getTransactions());
             }
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-18"));
+                for (FinTransaction finTran : ptfProgress.transactions()) {
+                    Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                    assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+                }
                 SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
                 actAndTcTrans = ptf.getTransactions();
@@ -154,11 +196,17 @@ class IbkrPtfProgressOfflineTest {
             }
         }
         {
-            IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
-            IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+            FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1"));
+            IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+            IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+            ValidatorFacade validator = finTracker.validator();
 
             {
                 PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-18"));
+                for (FinTransaction finTran : ptfProgress.transactions()) {
+                    Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                    assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+                }
                 SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
                 List<FinTransaction> actTrans2 = ptf.getTransactions();
@@ -185,11 +233,17 @@ class IbkrPtfProgressOfflineTest {
 
     @Test
     void ptfProgress_corpActions() {
-        IbkrModule ibkrFactory = testSupport.app(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1")).get(IbkrModule.class);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrFactory.ptfProgressProvider();
+        FinTracker finTracker = testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, "dms-pers1"));
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+        ValidatorFacade validator = finTracker.validator();
 
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2023-08-02"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -200,6 +254,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2023-11-17"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -210,6 +268,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2023-11-29"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -221,6 +283,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-04-30"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -229,6 +295,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-05-31"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -237,6 +307,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-06-05"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());
@@ -245,6 +319,10 @@ class IbkrPtfProgressOfflineTest {
         }
         {
             PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(ibkrTestAccount1, parse("2022-08-03"), parse("2024-06-10"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
             SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
 
             assertEquals(2, ptf.getCurrencies().size());

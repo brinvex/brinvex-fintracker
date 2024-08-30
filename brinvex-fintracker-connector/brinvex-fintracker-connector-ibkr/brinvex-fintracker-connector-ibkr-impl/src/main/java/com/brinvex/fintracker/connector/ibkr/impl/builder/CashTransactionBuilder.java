@@ -38,7 +38,7 @@ public class CashTransactionBuilder {
 
     public CashTransaction build() {
         Assert.notNull(reportDate);
-        Assert.matches(currency, Regex.CCY.pattern());
+        Assert.matches(currency, Regex.Pattern.CCY.pattern());
         Assert.notNull(symbol);
         Assert.notNull(description);
         Assert.notNull(securityID);

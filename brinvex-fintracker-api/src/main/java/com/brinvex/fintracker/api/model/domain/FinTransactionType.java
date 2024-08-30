@@ -2,41 +2,37 @@ package com.brinvex.fintracker.api.model.domain;
 
 public enum FinTransactionType {
 
-    DEPOSIT(FinTransactionCategory.EXTERNAL_FLOW),
+    DEPOSIT(FinTransactionFlowType.EXTERNAL),
 
-    WITHDRAWAL(FinTransactionCategory.EXTERNAL_FLOW),
+    WITHDRAWAL(FinTransactionFlowType.EXTERNAL),
 
-    BUY(FinTransactionCategory.TRADE),
+    BUY(FinTransactionFlowType.INTERNAL),
 
-    SELL(FinTransactionCategory.TRADE),
+    SELL(FinTransactionFlowType.INTERNAL),
 
-    FX_BUY(FinTransactionCategory.TRADE),
+    FX_BUY(FinTransactionFlowType.INTERNAL),
 
-    FX_SELL(FinTransactionCategory.TRADE),
+    FX_SELL(FinTransactionFlowType.INTERNAL),
 
-    DIVIDEND(FinTransactionCategory.INTERNAL_FLOW),
+    CASH_DIVIDEND(FinTransactionFlowType.INTERNAL),
 
-    INTEREST(FinTransactionCategory.INTERNAL_FLOW),
+    INTEREST(FinTransactionFlowType.INTERNAL),
 
-    OTHER_INCOME(FinTransactionCategory.INTERNAL_FLOW),
+    FEE(FinTransactionFlowType.INTERNAL),
 
-    FEE(FinTransactionCategory.INTERNAL_FLOW),
+    TAX(FinTransactionFlowType.INTERNAL),
 
-    TAX(FinTransactionCategory.INTERNAL_FLOW),
+    TRANSFORMATION(FinTransactionFlowType.INTERNAL),
 
-    OTHER_OUTCOME(FinTransactionCategory.INTERNAL_FLOW),
+    OTHER_INTERNAL_FLOW(FinTransactionFlowType.INTERNAL);
 
-    TRANSFORMATION(FinTransactionCategory.OTHER),
+    private final FinTransactionFlowType flowType;
 
-    OTHER(FinTransactionCategory.OTHER);
-
-    private final FinTransactionCategory category;
-
-    FinTransactionType(FinTransactionCategory category) {
-        this.category = category;
+    FinTransactionType(FinTransactionFlowType flowType) {
+        this.flowType = flowType;
     }
 
-    public FinTransactionCategory getCategory() {
-        return category;
+    public FinTransactionFlowType flowType() {
+        return flowType;
     }
 }

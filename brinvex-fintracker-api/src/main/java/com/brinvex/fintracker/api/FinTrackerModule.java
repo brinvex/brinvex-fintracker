@@ -4,7 +4,7 @@ public interface FinTrackerModule {
 
     interface ApplicationAware {
 
-        void setApplication(FinTrackerApplication application);
+        void setApplication(FinTracker application);
 
     }
 }

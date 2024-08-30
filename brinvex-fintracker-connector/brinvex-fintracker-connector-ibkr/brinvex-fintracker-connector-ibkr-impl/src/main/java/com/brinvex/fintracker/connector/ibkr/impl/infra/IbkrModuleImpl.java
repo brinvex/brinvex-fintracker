@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.infra;
 
-import com.brinvex.fintracker.api.FinTrackerApplication;
+import com.brinvex.fintracker.api.FinTracker;
 import com.brinvex.fintracker.api.FinTrackerModule;
 import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
@@ -19,7 +19,7 @@ import com.brinvex.util.dms.api.Dms;
 
 public class IbkrModuleImpl implements IbkrModule, FinTrackerModule.ApplicationAware {
 
-    private FinTrackerApplication application;
+    private FinTracker application;
 
     @Override
     public IbkrStatementMerger statementMerger() {
@@ -62,7 +62,7 @@ public class IbkrModuleImpl implements IbkrModule, FinTrackerModule.ApplicationA
     }
 
     @Override
-    public void setApplication(FinTrackerApplication application) {
+    public void setApplication(FinTracker application) {
         this.application = application;
     }
 }
