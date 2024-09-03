@@ -2,7 +2,7 @@ package com.brinvex.fintracker.connector.ibkr.impl.infra;
 
 import com.brinvex.fintracker.api.FinTracker;
 import com.brinvex.fintracker.api.FinTrackerModule;
-import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
+import com.brinvex.fintracker.connector.ibkr.api.service.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;

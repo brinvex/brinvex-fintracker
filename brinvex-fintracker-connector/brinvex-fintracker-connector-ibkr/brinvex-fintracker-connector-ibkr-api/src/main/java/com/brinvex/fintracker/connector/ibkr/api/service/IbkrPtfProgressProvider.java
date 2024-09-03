@@ -1,23 +1,22 @@
 package com.brinvex.fintracker.connector.ibkr.api.service;
 
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.connector.ibkr.api.model.IbkrCredentials;
+import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
 
 import java.time.Duration;
 import java.time.LocalDate;
 
 public interface IbkrPtfProgressProvider {
 
-    PtfProgress getPortfolioProgressOnline(
-            String accountId,
-            IbkrCredentials credentials,
+    PtfProgress getPortfolioProgress(
+            IbkrAccount ibkrAccount,
             LocalDate fromDateIncl,
             LocalDate toDateIncl,
             Duration staleTolerance
     );
 
     PtfProgress getPortfolioProgressOffline(
-            String accountId,
+            IbkrAccount ibkrAccount,
             LocalDate fromDateIncl,
             LocalDate toDateIncl
     );

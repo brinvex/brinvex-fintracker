@@ -20,6 +20,9 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import static java.util.stream.Collectors.toMap;
+
+
 public class TestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestSupport.class);
@@ -34,7 +37,7 @@ public class TestSupport {
 
     private DmsFactory moduleDmsFactory;
 
-    private Properties properties;
+    private Map<String, String> properties;
 
     public TestSupport(String module) {
         this.module = module;
@@ -102,7 +105,23 @@ public class TestSupport {
         return property(key, null);
     }
 
+    public Map<String, String> subProperties(String keyPrefix) {
+        initProperties();
+        String moduleKeyPrefix = "test.%s.%s.".formatted(module, keyPrefix);
+        int moduleKeyPrefixLength = moduleKeyPrefix.length();
+        return properties.entrySet()
+                .stream()
+                .filter(e -> e.getKey().startsWith(moduleKeyPrefix))
+                .collect(toMap(stringStringEntry -> stringStringEntry.getKey().substring(moduleKeyPrefixLength), Map.Entry::getValue));
+    }
+
     public String property(String key, String defaultValue) {
+        initProperties();
+        String moduleKey = "test.%s.%s".formatted(module, key);
+        return properties.getOrDefault(moduleKey, defaultValue);
+    }
+
+    private void initProperties() {
         if (properties == null) {
             Path testPropPath = home.resolve("brinvex-fintracker-test.properties");
             if (!Files.exists(testPropPath)) {
@@ -111,14 +130,16 @@ public class TestSupport {
                 LOG.debug("Going to use test property file: {}", testPropPath);
             }
             try (InputStream is = new FileInputStream(testPropPath.toFile())) {
-                properties = new Properties();
+                //todo 5 - Find a better way to work with properties
+                Properties properties = new Properties();
                 properties.load(is);
+                this.properties = properties.entrySet()
+                        .stream()
+                        .collect(toMap(e -> e.getKey().toString(), t -> t.getValue().toString()));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
-        String moduleKey = "test.%s.%s".formatted(module, key);
-        return properties.getProperty(moduleKey);
     }
 
 }

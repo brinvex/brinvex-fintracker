@@ -16,7 +16,7 @@ integration, or other opportunities, feel free to get in touch—I’d love to h
 ### Maven Dependencies
 
     <properties>
-         <brinvex-fintracker.version>0.0.17</brinvex-fintracker.version>
+         <brinvex-fintracker.version>0.0.19</brinvex-fintracker.version>
     </properties>
     
     <repository>
@@ -70,7 +70,6 @@ preventing duplication and maintaining the integrity of data.
 
 
 
-
 ## Requirements
 
 - Java 22 or above
@@ -78,4 +77,35 @@ preventing duplication and maintaining the integrity of data.
 ## License
 
 - The _Brinvex FinTracker_ is released under version 2.0 of the Apache License.
+
+## Practical insights and tips
+
+#### IBKR - Symbol Discrepancy in Stock Position
+
+A discrepancy may be observed in the display symbols for stock positions, 
+such as those in the German company Siemens (_ISIN: DE0007236101_). 
+When purchased on IBIS, the symbol for Siemens stock may appear 
+as "SIE" in the TWS platform and the Portfolio screen of the Interactive Brokers web application. 
+However, in report statements, including flex statements, the symbol may be listed as "SIEd."
+This inconsistency arises due to the use of the primary exchange symbol in statements, 
+which may differ from the symbol displayed in other parts of the platform. 
+Despite this variation, the stock remains the same, as confirmed by matching ISINs and other details. 
+This behavior is a standard design feature of the IBKR platform.
+
+#### IBKR - Delayed Update Effect
+
+Many updates or changes made by the user will only take full effect after one business day. 
+For example, when modifying the _Account Alias_, the new value will not immediately appear in the statements. 
+Instead, the old value will continue to be displayed until the system processes the update overnight. 
+Users should expect this one-business-day period for updates to be fully reflected.
+
+#### IBKR - Account ID change
+On August 1, 2024, Interactive Brokers Ireland Limited (IBIE) and 
+Interactive Brokers Central Europe Zrt. (IBCE) merged into a single entity, 
+with all former IBCE clients now serviced by IBIE. 
+As a result, former IBCE clients will be assigned new Account IDs under IBIE.  
+https://www.ibkrguides.com/kb/merger-of-two-eu-broker-dealers.htm
+
+To manage this transition, we utilize the ````IbkrAccount.migratedAccount```` structure 
+to record the old Account ID and the date of migration.
 

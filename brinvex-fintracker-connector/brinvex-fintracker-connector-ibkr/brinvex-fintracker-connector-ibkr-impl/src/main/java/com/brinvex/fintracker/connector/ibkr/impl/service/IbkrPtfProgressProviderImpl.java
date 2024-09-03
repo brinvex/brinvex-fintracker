@@ -5,7 +5,8 @@ import com.brinvex.fintracker.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.api.model.domain.PtfProgress;
 import com.brinvex.fintracker.api.model.general.DateAmount;
 import com.brinvex.fintracker.api.provider.PtfProgressProvider;
-import com.brinvex.fintracker.connector.ibkr.api.model.IbkrCredentials;
+import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
+import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount.Credentials;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
@@ -18,7 +19,6 @@ import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
 import com.brinvex.util.java.validation.Assert;
-import com.brinvex.util.java.validation.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,13 +36,13 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static com.brinvex.util.java.NullUtil.nullSafe;
-import static com.brinvex.util.java.StringUtil.stripToNull;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNullElse;
 
+@SuppressWarnings("DuplicatedCode")
 public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, PtfProgressProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(IbkrPtfProgressProviderImpl.class);
@@ -87,59 +86,85 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         Assert.equal(ptfProgressReq.institution(), "IBKR");
         Map<String, String> ptfProps = ptfProgressReq.ptfProps();
 
-        String accountId = ptfProps.get(IbkrPtfPropDef.ACCOUNT_ID);
-        String token = stripToNull(ptfProps.get(IbkrPtfPropDef.TOKEN));
-        String actFlexQueryId = stripToNull(ptfProps.get(IbkrPtfPropDef.ACTIVITY_FLEX_QUERY_ID));
-        String tcFlexQueryId = stripToNull(ptfProps.get(IbkrPtfPropDef.TRADE_CONFIRM_FLEX_QUERY_ID));
-        PtfProgress ptfProgress;
-        if (actFlexQueryId != null || tcFlexQueryId != null) {
-            IbkrCredentials credentials = new IbkrCredentials(token, actFlexQueryId, tcFlexQueryId);
-            ptfProgress = getPortfolioProgressOnline(
-                    accountId,
-                    credentials,
-                    ptfProgressReq.fromDateIncl(),
-                    ptfProgressReq.toDateIncl(),
-                    ptfProgressReq.staleTolerance());
+        IbkrAccount ibkrAccount = IbkrAccount.of(ptfProps);
+        LocalDate reqFromDateIncl = ptfProgressReq.fromDateIncl();
+        LocalDate reqToDateIncl = ptfProgressReq.toDateIncl();
+        Duration staleTolerance = ptfProgressReq.staleTolerance();
+
+        return getPortfolioProgress(ibkrAccount, reqFromDateIncl, reqToDateIncl, staleTolerance);
+    }
+
+    @Override
+    public PtfProgress getPortfolioProgressOffline(IbkrAccount ibkrAccount, LocalDate fromDateIncl, LocalDate toDateIncl) {
+        return getPortfolioProgress(new IbkrAccount(ibkrAccount.accountId(), ibkrAccount.migratedAccount()), fromDateIncl, toDateIncl, null);
+    }
+
+    @Override
+    public PtfProgress getPortfolioProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
+
+        IbkrAccount.MigratedAccount migratedAccount = account.migratedAccount();
+
+        PtfProgress resultProgress;
+        if (migratedAccount == null) {
+            resultProgress = getPortfolioProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance);
         } else {
-            ptfProgress = getPortfolioProgressOffline(
-                    accountId,
-                    ptfProgressReq.fromDateIncl(),
-                    ptfProgressReq.toDateIncl());
+            PtfProgress oldAccProgress;
+            LocalDate newAccFromDateIncl;
+            String oldAccountId = migratedAccount.oldAccountId();
+            LocalDate oldAccountValidToIncl = migratedAccount.oldAccountValidToIncl();
+            if (!fromDateIncl.isAfter(oldAccountValidToIncl)) {
+                if (toDateIncl.isAfter(oldAccountValidToIncl)) {
+                    oldAccProgress = getPortfolioProgress(oldAccountId, null, fromDateIncl, oldAccountValidToIncl, null);
+                    newAccFromDateIncl = oldAccountValidToIncl;
+                } else {
+                    oldAccProgress = getPortfolioProgress(oldAccountId, null, fromDateIncl, toDateIncl, null);
+                    newAccFromDateIncl = toDateIncl;
+                }
+            } else {
+                oldAccProgress = null;
+                newAccFromDateIncl = fromDateIncl;
+            }
+
+            PtfProgress newAccProgress = null;
+            if (!newAccFromDateIncl.isAfter(toDateIncl)) {
+                if (account.credentials() != null) {
+                    newAccProgress = getPortfolioProgress(account.accountId(), account.credentials(), newAccFromDateIncl, toDateIncl, staleTolerance);
+                } else {
+                    newAccProgress = getPortfolioProgress(account.accountId(), null, newAccFromDateIncl, toDateIncl, null);
+                }
+            }
+
+            if (newAccProgress != null) {
+                if (oldAccProgress != null) {
+                    Assert.equal(newAccProgress.ccy(), oldAccProgress.ccy());
+                    resultProgress = new PtfProgress(
+                            Stream.concat(
+                                    oldAccProgress.transactions().stream(),
+                                    newAccProgress.transactions().stream()).toList(),
+                            Stream.concat(
+                                    oldAccProgress.netAssetValues().stream().filter(e -> !e.date().isEqual(migratedAccount.oldAccountValidToIncl())),
+                                    newAccProgress.netAssetValues().stream()).toList(),
+                            newAccProgress.ccy()
+                    );
+                } else {
+                    resultProgress = newAccProgress;
+                }
+            } else {
+                resultProgress = oldAccProgress;
+            }
         }
-        return ptfProgress;
+
+        if (resultProgress == null) {
+            throw new IllegalStateException(
+                    "Missing PtfProgress data: accountId=%s, fromDayIncl=%s, toDayIncl=%s, migratedAccount=%s, credentials=%s"
+                            .formatted(account.accountId(), fromDateIncl, toDateIncl, account.migratedAccount(), account.credentials() == null));
+        }
+        return resultProgress;
     }
 
-    @Override
-    public PtfProgress getPortfolioProgressOnline(
-            String accountId,
-            IbkrCredentials credentials,
-            LocalDate fromDateIncl,
-            LocalDate toDateIncl,
-            Duration staleTolerance
-    ) {
-        Validate.notNullNotBlank(accountId, () -> "accountId cannot be null or empty");
-        Validate.notNull(credentials, () -> "credentials cannot be null");
-        Validate.notNull(fromDateIncl, () -> "fromDateIncl cannot be null");
-        Validate.notNull(toDateIncl, () -> "toDateIncl cannot be null");
-        Validate.notNull(staleTolerance, () -> "staleTolerance cannot be null");
-
-        return getPortfolioProgress(accountId, credentials, fromDateIncl, toDateIncl, staleTolerance);
-    }
-
-    @Override
-    public PtfProgress getPortfolioProgressOffline(
-            String accountId,
-            LocalDate fromDateIncl,
-            LocalDate toDateIncl
-    ) {
-        Validate.notNullNotBlank(accountId, () -> "accountId cannot be null or empty");
-        Validate.notNull(fromDateIncl, () -> "fromDateIncl cannot be null");
-        Validate.notNull(toDateIncl, () -> "toDateIncl cannot be null");
-
-        return getPortfolioProgress(accountId, null, fromDateIncl, toDateIncl, null);
-    }
-
-    private PtfProgress getPortfolioProgress(String accountId, IbkrCredentials credentials, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
+    private PtfProgress getPortfolioProgress(String accountId, Credentials credentials, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
+        Assert.notNull(accountId, () -> "accountId must not be null");
+        Assert.isTrue(!fromDateIncl.isAfter(toDateIncl));
 
         LocalDate ibkrToday = ZonedDateTime.now(IBKR_ZONE_ID).toLocalDate();
         {
@@ -212,6 +237,15 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         ActivityStatement mergedActStatement = statementMerger.mergeActivityStatements(actStatements).orElse(null);
         if (mergedActStatement == null) {
             return null;
+        }
+
+        if (!accountId.equals(mergedActStatement.accountId())) {
+            throw new IllegalStateException("Given accountId=%s does not match foundAccountId=%s"
+                    .formatted(accountId, mergedActStatement.accountId()));
+        }
+        if (mergedActStatement.fromDate().isAfter(fromDateIncl)) {
+            throw new IllegalStateException("No Activity statement available for accountId=%s, fromDateIncl=%s"
+                    .formatted(accountId, fromDateIncl));
         }
 
         List<FinTransaction> cashTrans = finTransactionMapper.mapCashTransactions(mergedActStatement.cashTransactions());
@@ -296,6 +330,5 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         }
         return new PtfProgress(newTrans, List.copyOf(navs.values()), navsCcy);
     }
-
 
 }
