@@ -5,18 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!--
-    See also https://github.com/spring-projects/spring-boot/releases/
+    See also
+    https://github.com/spring-projects/spring-boot/releases/
+    https://central.sonatype.com/artifact/org.springframework.boot/spring-boot-dependencies/overview
     -->
     <parent>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
+        <artifactId>spring-boot-dependencies</artifactId>
         <version>3.3.3</version>
         <relativePath/>
     </parent>
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>0.0.11</version>
+    <version>0.0.17</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
@@ -26,34 +28,6 @@
         Designed as both an application for end-users and a library for integration into other systems,
         it provides flexible and scalable solutions for financial tracking.
     </description>
-    <organization>
-        <name>Brinvex</name>
-        <url>https://brinvex.com</url>
-    </organization>
-    <modules>
-        <module>brinvex-fintracker-api</module>
-        <module>brinvex-fintracker-core-impl</module>
-        <module>brinvex-fintracker-test-support</module>
-        <module>brinvex-fintracker-connector</module>
-    </modules>
-    <url>https://github.com/brinvex/brinvex-fintracker</url>
-    <inceptionYear>2024</inceptionYear>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Lukas</name>
-            <email>dev@brinvex.com</email>
-            <organization>Brinvex</organization>
-            <organizationUrl>https://brinvex.com</organizationUrl>
-        </developer>
-    </developers>
 
     <properties>
         <java.version>22</java.version>
@@ -68,8 +42,40 @@
         <brinvex-util-dms.version>1.0.8</brinvex-util-dms.version>
         <brinvex-util-java.version>1.57.2</brinvex-util-java.version>
 
+        <github-site-maven-plugin.version>0.11</github-site-maven-plugin.version>
         <github.global.server>github</github.global.server>
     </properties>
+
+    <url>https://github.com/brinvex/brinvex-fintracker</url>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Lukas</name>
+            <email>dev@brinvex.com</email>
+            <organization>Brinvex</organization>
+            <organizationUrl>https://brinvex.com</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <url>https://github.com/brinvex/brinvex-fintracker</url>
+    </scm>
+    <organization>
+        <name>Brinvex</name>
+        <url>https://brinvex.com</url>
+    </organization>
+    <inceptionYear>2024</inceptionYear>
+
+    <modules>
+        <module>brinvex-fintracker-api</module>
+        <module>brinvex-fintracker-connector</module>
+        <module>brinvex-fintracker-core-impl</module>
+        <module>brinvex-fintracker-test-support</module>
+    </modules>
 
     <dependencyManagement>
         <dependencies>
@@ -118,82 +124,104 @@
         </dependencies>
     </dependencyManagement>
 
-    <distributionManagement>
-        <repository>
-            <id>temp.internal.repo</id>
-            <name>Temporary Internal Staging Repository</name>
-            <url>file://${project.build.directory}/repo</url>
-        </repository>
-    </distributionManagement>
-
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven-compiler-plugin.version}</version>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven-deploy-plugin.version}</version>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
-        
-        <plugins>
-            <!--
-         https://www.baeldung.com/maven-repo-github
-         https://stackoverflow.com/questions/14013644/hosting-a-maven-repository-on-github
-         -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.1</version>
-                <configuration>
-                    <altDeploymentRepository>temp.internal.repo::default::file://${project.build.directory}/repo</altDeploymentRepository>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.github.github</groupId>
-                <artifactId>site-maven-plugin</artifactId>
-                <version>0.11</version>
-                <configuration>
-                    <!-- git commit message -->
-                    <message>Maven artifacts for ${project.name} ${project.version}</message>
-                    <!-- disable webpage processing -->
-                    <noJekyll>true</noJekyll>
-                    <!-- matches distribution management repository url above -->
-                    <outputDirectory>${project.build.directory}/repo</outputDirectory>
-                    <!-- remote branch name -->
-                    <branch>refs/heads/main</branch>
-                    <includes><include>**/*</include></includes>
-                    <!-- GitHub repo name -->
-                    <repositoryName>brinvex-repo</repositoryName>
-                    <!-- GitHub username  -->
-                    <repositoryOwner>brinvex</repositoryOwner>
-                    <merge>true</merge>
-                </configuration>
-                <executions>
-                    <!-- run site-maven-plugin's 'site' target as part of the build's normal 'deploy' phase -->
-                    <execution>
-                        <goals>
-                            <goal>site</goal>
-                        </goals>
-                        <phase>deploy</phase>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>publish-artifact</id>
+            <activation>
+                <file>
+                    <missing>publish-artifact-disabled</missing>
+                </file>
+            </activation>
+
+            <distributionManagement>
+                <repository>
+                    <id>temp-internal-staging-repo</id>
+                    <name>Temporary Internal Staging Repository</name>
+                    <url>file://${user.dir}/target/repo</url>
+                </repository>
+            </distributionManagement>
+
+            <build>
+                <plugins>
+                    <!--
+                    https://www.baeldung.com/maven-repo-github
+                    https://stackoverflow.com/questions/14013644/hosting-a-maven-repository-on-github
+                    -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>${maven-deploy-plugin.version}</version>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.github.github</groupId>
+                        <artifactId>site-maven-plugin</artifactId>
+                        <version>${github-site-maven-plugin.version}</version>
+                        <configuration>
+                            <!-- git commit message -->
+                            <message>Maven artifacts for ${project.name} ${project.version}</message>
+                            <!-- disable webpage processing -->
+                            <noJekyll>true</noJekyll>
+                            <!-- matches distribution management repository url above -->
+                            <outputDirectory>${user.dir}/target/repo</outputDirectory>
+                            <!-- remote branch name -->
+                            <branch>refs/heads/main</branch>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <!-- GitHub repo name -->
+                            <repositoryName>brinvex-repo</repositoryName>
+                            <!-- GitHub username  -->
+                            <repositoryOwner>brinvex</repositoryOwner>
+                            <merge>true</merge>
+                        </configuration>
+                        <executions>
+                            <!-- run site-maven-plugin's 'site' target as part of the build's normal 'deploy' phase -->
+                            <execution>
+                                <goals>
+                                    <goal>site</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
+            </build>
+        </profile>
+
+    </profiles>
+
 
     <repositories>
         <repository>
@@ -206,7 +234,7 @@
             </snapshots>
         </repository>
         <repository>
-            <id>brinvex-github-repo</id>
+            <id>brinvex-repo</id>
             <name>Brinvex Repository</name>
             <url>https://github.com/brinvex/brinvex-repo/raw/main/</url>
             <snapshots>

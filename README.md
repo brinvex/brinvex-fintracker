@@ -16,7 +16,7 @@ integration, or other opportunities, feel free to get in touch—I’d love to h
 ### Maven Dependencies
 
     <properties>
-         <brinvex-fintracker.version>0.0.11</brinvex-fintracker.version>
+         <brinvex-fintracker.version>0.0.17</brinvex-fintracker.version>
     </properties>
     
     <repository>
