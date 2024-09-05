@@ -16,7 +16,7 @@ integration, or other opportunities, feel free to get in touch—I’d love to h
 ### Maven Dependencies
 
     <properties>
-         <brinvex-fintracker.version>0.0.19</brinvex-fintracker.version>
+         <brinvex-fintracker.version>0.0.21</brinvex-fintracker.version>
     </properties>
     
     <repository>
@@ -106,6 +106,5 @@ with all former IBCE clients now serviced by IBIE.
 As a result, former IBCE clients will be assigned new Account IDs under IBIE.  
 https://www.ibkrguides.com/kb/merger-of-two-eu-broker-dealers.htm
 
-To manage this transition, we utilize the ````IbkrAccount.migratedAccount```` structure 
-to record the old Account ID and the date of migration.
+To manage such transitions, we utilize the recursive structure ````IbkrAccount.Migration````.
 

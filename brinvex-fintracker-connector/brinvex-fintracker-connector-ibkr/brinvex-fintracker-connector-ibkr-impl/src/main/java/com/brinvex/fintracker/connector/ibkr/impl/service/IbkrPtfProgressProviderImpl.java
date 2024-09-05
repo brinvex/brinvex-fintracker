@@ -96,61 +96,61 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
 
     @Override
     public PtfProgress getPortfolioProgressOffline(IbkrAccount ibkrAccount, LocalDate fromDateIncl, LocalDate toDateIncl) {
-        return getPortfolioProgress(new IbkrAccount(ibkrAccount.accountId(), ibkrAccount.migratedAccount()), fromDateIncl, toDateIncl, null);
+        return getPtfProgress(ibkrAccount, fromDateIncl, toDateIncl, null, false, 0);
     }
 
     @Override
     public PtfProgress getPortfolioProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
+        return getPtfProgress(account, fromDateIncl, toDateIncl, staleTolerance, true, 0);
+    }
 
+    private PtfProgress getPtfProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online, int recursionDepth) {
+        LOG.debug("getPtfProgress({}, {}-{}, staleTolerance={}, online={}, recursionDepth={})", account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth);
+        Assert.isTrue(recursionDepth < 10, () -> "getPtfProgress - recursionDepth must me less then 10, %s, %s-%s, staleTolerance=%s, online=%s, recursionDepth=%s)"
+                .formatted(account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth));
         IbkrAccount.MigratedAccount migratedAccount = account.migratedAccount();
 
         PtfProgress resultProgress;
         if (migratedAccount == null) {
-            resultProgress = getPortfolioProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance);
+            resultProgress = getSinglePtfProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance, online);
         } else {
-            PtfProgress oldAccProgress;
-            LocalDate newAccFromDateIncl;
-            String oldAccountId = migratedAccount.oldAccountId();
-            LocalDate oldAccountValidToIncl = migratedAccount.oldAccountValidToIncl();
-            if (!fromDateIncl.isAfter(oldAccountValidToIncl)) {
-                if (toDateIncl.isAfter(oldAccountValidToIncl)) {
-                    oldAccProgress = getPortfolioProgress(oldAccountId, null, fromDateIncl, oldAccountValidToIncl, null);
-                    newAccFromDateIncl = oldAccountValidToIncl;
+            PtfProgress migratedProgress;
+            PtfProgress progress;
+
+            LocalDate migrationFromIncl = migratedAccount.migrationFromIncl();
+            LocalDate migrationToIncl = migratedAccount.migrationToIncl();
+            if (fromDateIncl.isAfter(migrationToIncl)) {
+                migratedProgress = null;
+                progress = getSinglePtfProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance, online);
+            } else if (toDateIncl.isBefore(migrationFromIncl)) {
+                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth + 1);
+                progress = null;
+            } else {
+                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), fromDateIncl, migrationToIncl, staleTolerance, online, recursionDepth + 1);
+                progress = getSinglePtfProgress(account.accountId(), account.credentials(), migrationFromIncl, toDateIncl, staleTolerance, online);
+            }
+            if (progress != null) {
+                if (migratedProgress != null) {
+                    String resultCcy = progress.ccy();
+                    Assert.equal(resultCcy, migratedProgress.ccy());
+                    List<FinTransaction> resultTrans = Stream
+                            .concat(
+                                    migratedProgress.transactions().stream(),
+                                    progress.transactions().stream())
+                            .sorted(comparing(FinTransaction::date))
+                            .toList();
+                    List<DateAmount> resultNavs = Stream
+                            .concat(
+                                    migratedProgress.netAssetValues().stream().filter(e -> !e.date().isAfter(migrationFromIncl)),
+                                    progress.netAssetValues().stream().filter(e -> e.date().isAfter(migrationToIncl)))
+                            .sorted(comparing(DateAmount::date))
+                            .toList();
+                    resultProgress = new PtfProgress(resultTrans, resultNavs, resultCcy);
                 } else {
-                    oldAccProgress = getPortfolioProgress(oldAccountId, null, fromDateIncl, toDateIncl, null);
-                    newAccFromDateIncl = toDateIncl;
+                    resultProgress = progress;
                 }
             } else {
-                oldAccProgress = null;
-                newAccFromDateIncl = fromDateIncl;
-            }
-
-            PtfProgress newAccProgress = null;
-            if (!newAccFromDateIncl.isAfter(toDateIncl)) {
-                if (account.credentials() != null) {
-                    newAccProgress = getPortfolioProgress(account.accountId(), account.credentials(), newAccFromDateIncl, toDateIncl, staleTolerance);
-                } else {
-                    newAccProgress = getPortfolioProgress(account.accountId(), null, newAccFromDateIncl, toDateIncl, null);
-                }
-            }
-
-            if (newAccProgress != null) {
-                if (oldAccProgress != null) {
-                    Assert.equal(newAccProgress.ccy(), oldAccProgress.ccy());
-                    resultProgress = new PtfProgress(
-                            Stream.concat(
-                                    oldAccProgress.transactions().stream(),
-                                    newAccProgress.transactions().stream()).toList(),
-                            Stream.concat(
-                                    oldAccProgress.netAssetValues().stream().filter(e -> !e.date().isEqual(migratedAccount.oldAccountValidToIncl())),
-                                    newAccProgress.netAssetValues().stream()).toList(),
-                            newAccProgress.ccy()
-                    );
-                } else {
-                    resultProgress = newAccProgress;
-                }
-            } else {
-                resultProgress = oldAccProgress;
+                resultProgress = migratedProgress;
             }
         }
 
@@ -162,14 +162,15 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         return resultProgress;
     }
 
-    private PtfProgress getPortfolioProgress(String accountId, Credentials credentials, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
+    private PtfProgress getSinglePtfProgress(String accountId, Credentials credentials, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online) {
         Assert.notNull(accountId, () -> "accountId must not be null");
         Assert.isTrue(!fromDateIncl.isAfter(toDateIncl));
 
         LocalDate ibkrToday = ZonedDateTime.now(IBKR_ZONE_ID).toLocalDate();
         {
-            boolean actOnline = credentials != null && credentials.activityFlexQueryId() != null;
+            boolean actOnline = online && credentials != null && credentials.activityFlexQueryId() != null;
             if (actOnline) {
+                Assert.notNull(staleTolerance, () -> "staleTolerance must not be null");
                 LocalDate fetchFromDateIncl;
                 List<ActivityDocKey> oldActDocKeys = dms.getActivityDocKeys(accountId, fromDateIncl, toDateIncl);
                 if (oldActDocKeys.isEmpty()) {
@@ -210,9 +211,9 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                         ActivityDocKey fetchedDocKey = new ActivityDocKey(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
                         boolean useful = dms.putStatementIfUseful(fetchedDocKey, fetchedContent);
                         if (useful) {
-                            LOG.debug("getPortfolioProgress - saved fetched statement - {}", fetchedDocKey);
+                            LOG.debug("getSinglePtfProgress - saved fetched statement - {}", fetchedDocKey);
                         } else {
-                            LOG.debug("getPortfolioProgress - fetched statement is useless - {}", fetchedDocKey);
+                            LOG.debug("getSinglePtfProgress - fetched statement is useless - {}", fetchedDocKey);
                         }
                         {
                             List<TradeConfirmDocKey> unnecessaryTcDocKeys = dms.getTradeConfirmDocKeys(accountId, fetchedActStatement.fromDate(), fetchedActStatement.toDate());
@@ -222,7 +223,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                             }
                         }
                     } else {
-                        LOG.debug("getPortfolioProgress - skipping activity fetch - accountId={}, actLastFetched={}, staleTolerance={}, now={}",
+                        LOG.debug("getSinglePtfProgress - skipping activity fetch - accountId={}, actLastFetched={}, staleTolerance={}, now={}",
                                 accountId, actLastFetched, staleTolerance, now);
                     }
                 }
@@ -259,7 +260,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
             LocalDate tcDate = mergedActStatement.toDate().plusDays(1);
             TradeConfirmStatement tcStatement = null;
             if (!tcDate.isAfter(toDateIncl)) {
-                boolean tcOnline = credentials != null && credentials.tradeConfirmFlexQueryId() != null;
+                boolean tcOnline = online && credentials != null && credentials.tradeConfirmFlexQueryId() != null;
                 if (tcOnline) {
                     if (tcDate.isEqual(ibkrToday)) {
                         TradeConfirmDocKey oldTcDocKey = dms.getUniqueTradeConfirmDocKey(accountId, tcDate);
@@ -268,9 +269,9 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                             ZonedDateTime oldWhenGenerated = ZonedDateTime.of(oldTcDocKey.date(), oldTcDocKey.whenGenerated(), IBKR_ZONE_ID);
                             boolean oldIsStale = oldWhenGenerated.plus(staleTolerance).isBefore(ibkrNow);
                             if (oldIsStale) {
-                                LOG.debug("getPortfolioProgress - old is stale - oldTcDocKey={}, staleTolerance={}, ibkrNow={}", oldTcDocKey, staleTolerance, ibkrNow);
+                                LOG.debug("getSinglePtfProgress - old is stale - oldTcDocKey={}, staleTolerance={}, ibkrNow={}", oldTcDocKey, staleTolerance, ibkrNow);
                             } else {
-                                LOG.debug("getPortfolioProgress - going to use old - oldTcDocKey={}, staleTolerance={}, ibkrNow={}", oldTcDocKey, staleTolerance, ibkrNow);
+                                LOG.debug("getSinglePtfProgress - going to use old - oldTcDocKey={}, staleTolerance={}, ibkrNow={}", oldTcDocKey, staleTolerance, ibkrNow);
                                 tcStatement = parser.parseTradeConfirmStatement(dms.getStatementContent(oldTcDocKey));
                             }
                         }

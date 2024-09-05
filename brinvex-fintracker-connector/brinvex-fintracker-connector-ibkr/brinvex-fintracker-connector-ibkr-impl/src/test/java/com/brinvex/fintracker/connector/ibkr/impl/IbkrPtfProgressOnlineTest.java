@@ -58,6 +58,15 @@ class IbkrPtfProgressOnlineTest extends BaseIbkrTest {
             ptf = new SimplePtf(ptfProgress.transactions());
             assertTrue(ptf.getCurrencies().size() >= 2);
         }
+        {
+            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgress(
+                    account2, parse("2023-01-23"), parse("2024-09-05"), ofMinutes(1)
+            );
+
+            ptf = new SimplePtf(ptfProgress.transactions());
+            assertEquals(2, ptf.getCurrencies().size());
+            assertEquals("6", ptf.getHoldingQty(US, "ILMN").toString());
+        }
     }
 
 }

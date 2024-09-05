@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import static java.util.stream.Collectors.toMap;
+
 public record IbkrAccount(
         String accountId,
         Credentials credentials,
@@ -23,9 +25,6 @@ public record IbkrAccount(
             if (activityFlexQueryId == null) {
                 throw new IllegalArgumentException("activityFlexQueryId must not be null");
             }
-            if (tradeConfirmFlexQueryId == null) {
-                throw new IllegalArgumentException("tradeConfirmFlexQueryId must not be null");
-            }
         }
 
         @Override
@@ -43,19 +42,34 @@ public record IbkrAccount(
      * Interactive Brokers Central Europe Zrt. (IBCE) merged into a single entity,
      * with all former IBCE clients now serviced by IBIE.
      * As a result, former IBCE clients will be assigned new Account IDs under IBIE.
-     * To manage this transition, we utilize the IbkrAccount.migratedAccount structure
-     * to record the old Account ID and the date of migration.
+     * To manage such transitions, we utilize the recursive structure IbkrAccount.Migration.
      */
     public record MigratedAccount(
-            String oldAccountId,
-            LocalDate oldAccountValidToIncl
+            IbkrAccount oldAccount,
+            LocalDate migrationFromIncl,
+            LocalDate migrationToIncl
     ) {
         public MigratedAccount {
-            if (oldAccountId == null) {
-                throw new IllegalArgumentException("oldAccountId must not be null");
+            if (oldAccount == null) {
+                throw new IllegalArgumentException("oldAccount must not be null");
             }
-            if (oldAccountValidToIncl == null) {
-                throw new IllegalArgumentException("oldAccountValidToIncl must not be null");
+            if (migrationFromIncl == null) {
+                throw new IllegalArgumentException("migrationFromIncl must not be null");
+            }
+            if (migrationToIncl == null) {
+                throw new IllegalArgumentException("migrationToIncl must not be null");
+            }
+            if (migrationFromIncl.isAfter(migrationToIncl)) {
+                throw new IllegalArgumentException("migrationFromIncl must not be after migrationToIncl, %s, %s"
+                        .formatted(migrationFromIncl, migrationToIncl));
+            }
+            MigratedAccount prevMigratedAccount = oldAccount.migratedAccount();
+            if (prevMigratedAccount != null) {
+                if (!prevMigratedAccount.migrationToIncl().isBefore(migrationFromIncl)) {
+                    throw new IllegalArgumentException("recursive prev migrationToIncl must be before migrationFromIncl, %s, %s".formatted(
+                            prevMigratedAccount, this
+                    ));
+                }
             }
         }
     }
@@ -83,8 +97,11 @@ public record IbkrAccount(
         String token = props.get("token");
         String activityFlexQueryId = props.get("activityFlexQueryId");
         String tradeConfirmationFlexQueryId = props.get("tradeConfirmFlexQueryId");
-        String oldAccountId = props.get("oldAccountId");
-        String oldAccountValidToIncl = props.get("oldAccountValidToIncl");
+        String migrationKeyPartPrefix = "migratedAccount.";
+        int migrationKeyPartLength = migrationKeyPartPrefix.length();
+        Map<String, String> migrationProps = props.entrySet().stream().filter(e -> e.getKey()
+                        .startsWith(migrationKeyPartPrefix))
+                .collect(toMap(e -> e.getKey().substring(migrationKeyPartLength), Map.Entry::getValue));
 
         IbkrAccount account;
         if (accountId == null || accountId.isEmpty()) {
@@ -96,9 +113,11 @@ public record IbkrAccount(
             } else {
                 credentials = null;
             }
-            IbkrAccount.MigratedAccount migratedAccount;
-            if (oldAccountId != null && !oldAccountId.isBlank()) {
-                migratedAccount = new IbkrAccount.MigratedAccount(oldAccountId, LocalDate.parse(oldAccountValidToIncl));
+            MigratedAccount migratedAccount;
+            if (!migrationProps.isEmpty()) {
+                LocalDate migrationFromIncl = LocalDate.parse(migrationProps.get("migrationFromIncl"));
+                LocalDate migrationToIncl = LocalDate.parse(migrationProps.get("migrationToIncl"));
+                migratedAccount = new MigratedAccount(IbkrAccount.of(migrationProps), migrationFromIncl, migrationToIncl);
             } else {
                 migratedAccount = null;
             }
