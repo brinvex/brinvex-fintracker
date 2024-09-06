@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.builder;
 
-import com.brinvex.fintracker.api.util.Regex;
+import com.brinvex.fintracker.core.api.util.Regex;
 import com.brinvex.util.java.validation.Assert;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.EquitySummary;
 import lombok.Setter;

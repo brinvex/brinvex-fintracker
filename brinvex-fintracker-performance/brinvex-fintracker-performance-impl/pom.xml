@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-performance</artifactId>
+        <version>0.0.21</version>
+    </parent>
+
+    <artifactId>brinvex-fintracker-performance-impl</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-performance-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-core-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.brinvex.util</groupId>
+            <artifactId>brinvex-util-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-test-support</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.brinvex.fintracker</groupId>
+            <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

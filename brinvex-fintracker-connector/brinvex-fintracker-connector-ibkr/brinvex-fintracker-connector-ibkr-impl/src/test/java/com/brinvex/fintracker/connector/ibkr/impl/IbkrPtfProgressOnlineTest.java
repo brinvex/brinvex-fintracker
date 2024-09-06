@@ -1,8 +1,8 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrModule;
+import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.test.support.SimplePtf;
 import org.junit.jupiter.api.Test;

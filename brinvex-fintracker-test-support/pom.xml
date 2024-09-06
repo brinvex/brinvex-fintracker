@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>com.brinvex.fintracker</groupId>
-            <artifactId>brinvex-fintracker-api</artifactId>
+            <artifactId>brinvex-fintracker-core-api</artifactId>
         </dependency>
         <dependency>
             <groupId>com.brinvex.util</groupId>

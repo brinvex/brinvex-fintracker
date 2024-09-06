@@ -1,9 +1,9 @@
 package com.brinvex.fintracker.test.support;
 
-import com.brinvex.fintracker.api.exception.FinTransactionProcessingException;
-import com.brinvex.fintracker.api.model.domain.Asset;
-import com.brinvex.fintracker.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.api.model.domain.FinTransactionType;
+import com.brinvex.fintracker.core.api.exception.FinTransactionProcessingException;
+import com.brinvex.fintracker.core.api.model.domain.Asset;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.FinTransactionType;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

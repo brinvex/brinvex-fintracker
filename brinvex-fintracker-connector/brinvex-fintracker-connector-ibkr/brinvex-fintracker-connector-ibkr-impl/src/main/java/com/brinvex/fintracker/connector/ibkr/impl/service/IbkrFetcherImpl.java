@@ -1,8 +1,8 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.api.exception.FetchException;
-import com.brinvex.fintracker.api.facade.HttpClientFacade;
-import com.brinvex.fintracker.api.facade.HttpClientFacade.HttpResponse;
+import com.brinvex.fintracker.core.api.exception.FetchException;
+import com.brinvex.fintracker.core.api.facade.HttpClientFacade;
+import com.brinvex.fintracker.core.api.facade.HttpClientFacade.HttpResponse;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
 import com.brinvex.util.java.validation.Validate;
 import org.slf4j.Logger;

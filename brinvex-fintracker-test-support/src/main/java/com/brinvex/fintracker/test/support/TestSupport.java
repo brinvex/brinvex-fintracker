@@ -1,8 +1,8 @@
 package com.brinvex.fintracker.test.support;
 
-import com.brinvex.fintracker.api.FinTracker;
-import com.brinvex.fintracker.api.FinTrackerConfig;
-import com.brinvex.fintracker.api.FinTrackerConfigBuilder;
+import com.brinvex.fintracker.core.api.FinTracker;
+import com.brinvex.fintracker.core.api.FinTrackerConfig;
+import com.brinvex.fintracker.core.api.FinTrackerConfigBuilder;
 import com.brinvex.util.dms.api.DmsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

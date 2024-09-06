@@ -71,17 +71,28 @@
     <inceptionYear>2024</inceptionYear>
 
     <modules>
-        <module>brinvex-fintracker-api</module>
         <module>brinvex-fintracker-connector</module>
-        <module>brinvex-fintracker-core-impl</module>
+        <module>brinvex-fintracker-core</module>
         <module>brinvex-fintracker-test-support</module>
+        <module>brinvex-fintracker-performance</module>
+        <module>brinvex-fintracker-performance/brinvex-fintracker-performance-api</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-api</artifactId>
+                <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-core-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -91,17 +102,17 @@
             </dependency>
             <dependency>
                 <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-performance-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
+                <artifactId>brinvex-fintracker-performance-impl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.brinvex.fintracker</groupId>
                 <artifactId>brinvex-fintracker-test-support</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.brinvex.fintracker</groupId>
-                <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.api.exception.StorageException;
+import com.brinvex.fintracker.core.api.exception.StorageException;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.TradeConfirmDocKey;

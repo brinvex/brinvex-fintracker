@@ -1,10 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.api.exception.AssistanceRequiredException;
-import com.brinvex.fintracker.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.api.model.general.DateAmount;
-import com.brinvex.fintracker.api.provider.PtfProgressProvider;
+import com.brinvex.fintracker.core.api.exception.AssistanceRequiredException;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.core.api.model.general.DateAmount;
+import com.brinvex.fintracker.core.api.provider.PtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount.Credentials;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;

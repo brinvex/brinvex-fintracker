@@ -1,16 +1,16 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.api.FinTracker;
-import com.brinvex.fintracker.api.facade.ValidatorFacade;
-import com.brinvex.fintracker.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.api.model.domain.FinTransactionType;
-import com.brinvex.fintracker.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
-import com.brinvex.fintracker.api.model.general.DateAmount;
+import com.brinvex.fintracker.core.api.FinTracker;
+import com.brinvex.fintracker.core.api.facade.ValidatorFacade;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.FinTransactionType;
+import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.core.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
+import com.brinvex.fintracker.core.api.model.general.DateAmount;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrModule;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.test.support.SimplePtf;
 import jakarta.validation.ConstraintViolation;

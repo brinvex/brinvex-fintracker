@@ -1,12 +1,12 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.api.exception.NotYetImplementedException;
-import com.brinvex.fintracker.api.model.domain.Asset;
-import com.brinvex.fintracker.api.model.domain.AssetType;
-import com.brinvex.fintracker.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.api.model.domain.FinTransaction.FinTransactionBuilder;
-import com.brinvex.fintracker.api.model.domain.FinTransactionType;
-import com.brinvex.fintracker.api.util.Regex;
+import com.brinvex.fintracker.core.api.exception.NotYetImplementedException;
+import com.brinvex.fintracker.core.api.model.domain.Asset;
+import com.brinvex.fintracker.core.api.model.domain.AssetType;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction.FinTransactionBuilder;
+import com.brinvex.fintracker.core.api.model.domain.FinTransactionType;
+import com.brinvex.fintracker.core.api.util.Regex;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.AssetSubCategory;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.BuySell;
@@ -34,11 +34,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.brinvex.fintracker.api.model.domain.FinTransactionType.BUY;
-import static com.brinvex.fintracker.api.model.domain.FinTransactionType.DEPOSIT;
-import static com.brinvex.fintracker.api.model.domain.FinTransactionType.SELL;
-import static com.brinvex.fintracker.api.model.domain.FinTransactionType.TRANSFORMATION;
-import static com.brinvex.fintracker.api.model.domain.FinTransactionType.WITHDRAWAL;
+import static com.brinvex.fintracker.core.api.model.domain.FinTransactionType.BUY;
+import static com.brinvex.fintracker.core.api.model.domain.FinTransactionType.DEPOSIT;
+import static com.brinvex.fintracker.core.api.model.domain.FinTransactionType.SELL;
+import static com.brinvex.fintracker.core.api.model.domain.FinTransactionType.TRANSFORMATION;
+import static com.brinvex.fintracker.core.api.model.domain.FinTransactionType.WITHDRAWAL;
 import static com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransactionType.DEPOSITS_WITHDRAWALS;
 import static com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransactionType.WITHHOLDING_TAX;
 import static com.brinvex.util.java.StringUtil.stripToNull;

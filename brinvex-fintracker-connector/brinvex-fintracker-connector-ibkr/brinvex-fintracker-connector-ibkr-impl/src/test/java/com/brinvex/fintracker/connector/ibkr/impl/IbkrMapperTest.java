@@ -1,13 +1,13 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
 
-import com.brinvex.fintracker.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CashTransaction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.CorporateAction;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.FlexStatement.ActivityStatement;
 import com.brinvex.fintracker.connector.ibkr.api.model.statement.Trade;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrModule;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMapper;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

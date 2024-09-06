@@ -1,8 +1,8 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
-import com.brinvex.fintracker.api.FinTracker;
+import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
-import com.brinvex.fintracker.connector.ibkr.api.service.IbkrModule;
+import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.test.support.TestSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
