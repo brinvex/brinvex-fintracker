@@ -14,7 +14,7 @@ public record MwrCalcRequest(
         BigDecimal startValueExcl,
         BigDecimal endValueIncl,
         Collection<DateAmount> cashFlows,
-        CashFlowTiming cashFlowTiming,
+        FlowTiming flowTiming,
         MwrCalcMethod calcMethod,
         boolean annualize
 ) {
@@ -46,19 +46,23 @@ public record MwrCalcRequest(
             BigDecimal startValueExcl,
             BigDecimal endValueIncl,
             Collection<DateAmount> cashFlows,
-            CashFlowTiming cashFlowTiming,
+            FlowTiming flowTiming,
             MwrCalcMethod calcMethod,
             Boolean annualize
     ) {
         this(
                 periodStartDateIncl,
                 periodEndDateIncl,
-                startValueExcl,
-                endValueIncl,
+                startValueExcl == null ? BigDecimal.ZERO : startValueExcl,
+                endValueIncl == null ? BigDecimal.ZERO : endValueIncl,
                 cashFlows == null ? Collections.emptyList() : cashFlows,
-                cashFlowTiming == null ? CashFlowTiming.BEGINNING_OF_DAY : cashFlowTiming,
+                flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming,
                 calcMethod == null ? MwrCalcMethod.MODIFIED_DIETZ : calcMethod,
                 annualize == null ? true : annualize
         );
+        if (periodStartDateIncl.isAfter(periodEndDateIncl)) {
+            throw new IllegalArgumentException("periodStartDateIncl must be before periodEndDateIncl, given: %s, %s"
+                    .formatted(periodStartDateIncl, periodEndDateIncl));
+        }
     }
 }

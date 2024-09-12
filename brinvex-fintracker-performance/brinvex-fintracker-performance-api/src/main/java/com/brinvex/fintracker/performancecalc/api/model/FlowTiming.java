@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.performancecalc.api.model;
 
-public enum CashFlowTiming {
+public enum FlowTiming {
 
     BEGINNING_OF_DAY,
 
