@@ -18,7 +18,7 @@
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>0.0.21</version>
+    <version>0.0.22</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
