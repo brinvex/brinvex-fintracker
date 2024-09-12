@@ -35,6 +35,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+import static com.brinvex.util.java.DateUtil.maxDate;
+import static com.brinvex.util.java.DateUtil.minDate;
 import static com.brinvex.util.java.NullUtil.nullSafe;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -104,6 +106,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
         return getPtfProgress(account, fromDateIncl, toDateIncl, staleTolerance, true, 0);
     }
 
+    @SuppressWarnings("UnnecessaryLocalVariable")
     private PtfProgress getPtfProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online, int recursionDepth) {
         LOG.debug("getPtfProgress({}, {}-{}, staleTolerance={}, online={}, recursionDepth={})", account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth);
         Assert.isTrue(recursionDepth < 10, () -> "getPtfProgress - recursionDepth must me less then 10, %s, %s-%s, staleTolerance=%s, online=%s, recursionDepth=%s)"
@@ -119,15 +122,19 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
 
             LocalDate migrationFromIncl = migratedAccount.migrationFromIncl();
             LocalDate migrationToIncl = migratedAccount.migrationToIncl();
-            if (fromDateIncl.isAfter(migrationToIncl)) {
-                migratedProgress = null;
-                progress = getSinglePtfProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance, online);
-            } else if (toDateIncl.isBefore(migrationFromIncl)) {
-                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth + 1);
-                progress = null;
+            LocalDate oldFromIncl = fromDateIncl;
+            LocalDate oldToIncl = minDate(toDateIncl, migrationToIncl);
+            LocalDate newFromIncl = maxDate(fromDateIncl, migrationFromIncl);
+            LocalDate newToIncl = toDateIncl;
+            if (!oldFromIncl.isAfter(oldToIncl)) {
+                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), oldFromIncl, oldToIncl, staleTolerance, online, recursionDepth + 1);
             } else {
-                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), fromDateIncl, migrationToIncl, staleTolerance, online, recursionDepth + 1);
-                progress = getSinglePtfProgress(account.accountId(), account.credentials(), migrationFromIncl, toDateIncl, staleTolerance, online);
+                migratedProgress = null;
+            }
+            if (!newFromIncl.isAfter(newToIncl)) {
+                progress = getSinglePtfProgress(account.accountId(), account.credentials(), newFromIncl, newToIncl, staleTolerance, online);
+            } else {
+                progress = null;
             }
             if (progress != null) {
                 if (migratedProgress != null) {
@@ -142,7 +149,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                     List<DateAmount> resultNavs = Stream
                             .concat(
                                     migratedProgress.netAssetValues().stream().filter(e -> !e.date().isAfter(migrationFromIncl)),
-                                    progress.netAssetValues().stream().filter(e -> e.date().isAfter(migrationToIncl)))
+                                    progress.netAssetValues().stream().filter(e -> e.date().isAfter(migrationFromIncl)))
                             .sorted(comparing(DateAmount::date))
                             .toList();
                     resultProgress = new PtfProgress(resultTrans, resultNavs, resultCcy);

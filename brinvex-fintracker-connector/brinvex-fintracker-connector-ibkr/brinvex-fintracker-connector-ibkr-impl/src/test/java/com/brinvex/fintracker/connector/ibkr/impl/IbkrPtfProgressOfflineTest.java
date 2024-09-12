@@ -226,7 +226,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @EnabledIf("account2MigratedIsNotNull")
     @Test
     void ptfProgress_accountMigration_oldNavZero() {
-        FinTracker finTracker = createFinTracker("dms-stable");
+        FinTracker finTracker = createFinTracker("dms-stable-20240904");
         IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
         ValidatorFacade validator = finTracker.validator();
@@ -280,7 +280,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @EnabledIf("account2MigratedIsNotNull")
     @Test
     void ptfProgress_accountMigration_dividendAccruals() {
-        FinTracker finTracker = createFinTracker("dms-stable");
+        FinTracker finTracker = createFinTracker("dms-stable-20240904");
         IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
         ValidatorFacade validator = finTracker.validator();
@@ -298,7 +298,6 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
             assertEquals("49.10", ptf.getCash(EUR).setScale(2, HALF_UP).toString());
             assertEquals("106.36", ptf.getCash(USD).setScale(2, HALF_UP).toString());
 
-            assertEquals("106.36", ptf.getCash(USD).setScale(2, HALF_UP).toString());
             int tranSize = ptf.getTransactions().size();
 
             FinTransaction tran_2 = ptf.getTransactions().get(tranSize - 3);
@@ -319,6 +318,26 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
             assertEquals("0.54", tran_0.netValue().toString());
 
             assertEquals(39, ptf.getHoldingsCount());
+        }
+    }
+
+    @EnabledIf("account2MigratedIsNotNull")
+    @Test
+    void ptfProgress_accountMigration_nav() {
+        FinTracker finTracker = createFinTracker("dms-stable");
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
+        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
+        ValidatorFacade validator = finTracker.validator();
+
+        {
+            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(
+                    account2, parse("2023-01-23"), parse("2024-09-11"));
+            for (FinTransaction finTran : ptfProgress.transactions()) {
+                Set<ConstraintViolation<FinTransactionConstraints>> violations = validator.validate(FinTransactionConstraints.of(finTran));
+                assertEquals(0, violations.size(), () -> "%s, %s".formatted(violations, finTran));
+            }
+            SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
+            assertEquals(parse("2024-09-11"), ptfProgress.netAssetValues().getLast().date());
         }
     }
 
