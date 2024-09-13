@@ -48,19 +48,28 @@ public class ModifiedDietzCalculator {
                 Validate.isTrue(endValueIncl.compareTo(ZERO) == 0);
                 return ZERO;
             } else {
-                List<DateAmount> ajdCashFlows = cashFlows.stream().sorted(comparing(DateAmount::date)).collect(toCollection(ArrayList::new));
-                DateAmount firstCashFlow = ajdCashFlows.removeFirst();
-                Validate.isTrue(firstCashFlow.amount().compareTo(ZERO) > 0);
-                cashFlows = ajdCashFlows;
-                beginValueExcl = firstCashFlow.amount();
-                LocalDate firstCashFlowDate = firstCashFlow.date();
+                List<DateAmount> sortedCashFlows = cashFlows
+                        .stream()
+                        .sorted(comparing(DateAmount::date))
+                        .collect(toCollection(ArrayList::new));
+                LocalDate firstCashFlowDate = sortedCashFlows.getFirst().date();
+                int firstDateCashFlowsCount = toIntExact(sortedCashFlows
+                        .stream()
+                        .map(DateAmount::date)
+                        .takeWhile(d -> d.isEqual(firstCashFlowDate))
+                        .count());
+                beginValueExcl = sortedCashFlows.subList(0, firstDateCashFlowsCount)
+                        .stream()
+                        .map(DateAmount::amount)
+                        .reduce(ZERO, BigDecimal::add);
+                cashFlows = sortedCashFlows.subList(firstDateCashFlowsCount, sortedCashFlows.size());
                 switch (flowTiming) {
                     case BEGINNING_OF_DAY -> adjBeginDateIncl = firstCashFlowDate;
                     case END_OF_DAY -> {
-                        int firstCashFlowDateComp = firstCashFlowDate.compareTo(endDateIncl);
-                        if (firstCashFlowDateComp == 0) {
+                        int firstCashFlowDateToEndDateComp = firstCashFlowDate.compareTo(endDateIncl);
+                        if (firstCashFlowDateToEndDateComp == 0) {
                             return ZERO;
-                        } else if (firstCashFlowDateComp < 0) {
+                        } else if (firstCashFlowDateToEndDateComp < 0) {
                             adjBeginDateIncl = firstCashFlowDate.plusDays(1);
                         } else {
                             throw new IllegalArgumentException(
@@ -81,18 +90,28 @@ public class ModifiedDietzCalculator {
                 Validate.isTrue(beginValueExcl.compareTo(ZERO) == 0);
                 return ZERO;
             } else {
-                List<DateAmount> ajdCashFlows = cashFlows.stream().sorted(comparing(DateAmount::date)).collect(toCollection(ArrayList::new));
-                DateAmount lastCashFlow = ajdCashFlows.removeLast();
-                Validate.isTrue(lastCashFlow.amount().compareTo(ZERO) < 0);
-                cashFlows = ajdCashFlows;
-                endValueIncl = lastCashFlow.amount().negate();
-                LocalDate lastCashFlowDate = lastCashFlow.date();
+                List<DateAmount> sortedCashFlows = cashFlows
+                        .stream()
+                        .sorted(comparing(DateAmount::date))
+                        .collect(toCollection(ArrayList::new));
+                LocalDate lastCashFlowDate = sortedCashFlows.getLast().date();
+                int nonLastDateCashFlowsCount = toIntExact(sortedCashFlows
+                        .stream()
+                        .map(DateAmount::date)
+                        .takeWhile(d -> !d.isEqual(lastCashFlowDate))
+                        .count());
+                endValueIncl = sortedCashFlows.subList(nonLastDateCashFlowsCount, sortedCashFlows.size())
+                        .stream()
+                        .map(DateAmount::amount)
+                        .reduce(ZERO, BigDecimal::add)
+                        .negate();
+                cashFlows = sortedCashFlows.subList(0, nonLastDateCashFlowsCount);
                 switch (flowTiming) {
                     case BEGINNING_OF_DAY -> {
-                        int lastCashFlowDateComp = lastCashFlowDate.compareTo(adjBeginDateIncl);
-                        if (lastCashFlowDateComp == 0) {
+                        int lastCashFlowDateToAdjBeginDateComp = lastCashFlowDate.compareTo(adjBeginDateIncl);
+                        if (lastCashFlowDateToAdjBeginDateComp == 0) {
                             return ZERO;
-                        } else if (lastCashFlowDateComp > 0) {
+                        } else if (lastCashFlowDateToAdjBeginDateComp > 0) {
                             adjEndDateIncl = lastCashFlowDate.minusDays(1);
                         } else {
                             throw new IllegalArgumentException(
@@ -115,14 +134,14 @@ public class ModifiedDietzCalculator {
         for (DateAmount cashFlow : cashFlows) {
             LocalDate cashFlowDate = cashFlow.date();
             BigDecimal cashFlowValue = cashFlow.amount();
-            Validate.isTrue(!cashFlowDate.isBefore(adjBeginDateIncl));
-            Validate.isTrue(!cashFlowDate.isAfter(adjEndDateIncl));
+            Validate.isTrue(!cashFlowDate.isBefore(adjBeginDateIncl), () -> "cashFlowDate must not be before adjBeginDateIncl, given: %s, %s"
+                    .formatted(cashFlowDate, adjBeginDateIncl));
+            Validate.isTrue(!cashFlowDate.isAfter(adjEndDateIncl), () -> "cashFlowDate must not be after adjEndDateIncl, given: %s, %s"
+                    .formatted(cashFlowDate, adjEndDateIncl));
 
-
-            int cashFlowLagInDays = toIntExact(DAYS.between(adjBeginDateIncl, cashFlowDate) + 1);
-            cashFlowLagInDays = switch (flowTiming) {
-                case BEGINNING_OF_DAY -> cashFlowLagInDays - 1;
-                case END_OF_DAY -> cashFlowLagInDays;
+            int cashFlowLagInDays = toIntExact(DAYS.between(adjBeginDateIncl, cashFlowDate)) + switch (flowTiming) {
+                case BEGINNING_OF_DAY -> 0;
+                case END_OF_DAY -> 1;
             };
             BigDecimal weight = ONE.subtract(new BigDecimal(cashFlowLagInDays).divide(totalDays, 20, RoundingMode.HALF_UP));
             BigDecimal weightedCashFlowValue = cashFlowValue.multiply(weight);

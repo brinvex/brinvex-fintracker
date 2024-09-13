@@ -235,7 +235,6 @@ class ModifiedDietzCalculatorTest {
                     .build();
 
             BigDecimal r1 = perfCalculator.calculateMwr(mwrReq1);
-            assertNotEquals("3.66", r1.setScale(2, RoundingMode.HALF_UP).toString());
             assertEquals("0.01", r1.setScale(2, RoundingMode.HALF_UP).toString());
 
             BigDecimal r2 = perfCalculator.calculateMwr(mwrReq1.toBuilder().endValueIncl(ZERO).cashFlows(emptyList()).build());
@@ -243,6 +242,14 @@ class ModifiedDietzCalculatorTest {
 
             BigDecimal r3 = perfCalculator.calculateMwr(mwrReq1.toBuilder().flowTiming(FlowTiming.END_OF_DAY).build());
             assertEquals(0, r3.compareTo(ZERO));
+
+            BigDecimal r4 = perfCalculator.calculateMwr(mwrReq1.toBuilder()
+                    .cashFlows(List.of(
+                            new DateAmount(parse("2016-01-01"), new BigDecimal("1000000")),
+                            new DateAmount(parse("2016-01-01"), new BigDecimal("800000"))))
+                    .build());
+            assertEquals(0, r4.compareTo(r1), () -> "r1=%s, r4=%s".formatted(r1, r4));
+
         }
         {
             MwrCalcRequest mwrReq1 = MwrCalcRequest.builder()
@@ -256,7 +263,6 @@ class ModifiedDietzCalculatorTest {
                     .build();
 
             BigDecimal r1 = perfCalculator.calculateMwr(mwrReq1);
-            assertNotEquals("3.66", r1.setScale(2, RoundingMode.HALF_UP).toString());
             assertEquals("0.01", r1.setScale(2, RoundingMode.HALF_UP).toString());
 
             BigDecimal r2 = perfCalculator.calculateMwr(mwrReq1.toBuilder().startValueExcl(ZERO).cashFlows(emptyList()).build());
@@ -264,6 +270,13 @@ class ModifiedDietzCalculatorTest {
 
             BigDecimal r3 = perfCalculator.calculateMwr(mwrReq1.toBuilder().flowTiming(FlowTiming.BEGINNING_OF_DAY).build());
             assertEquals(0, r3.compareTo(ZERO));
+
+            BigDecimal r4 = perfCalculator.calculateMwr(mwrReq1.toBuilder()
+                    .cashFlows(List.of(
+                            new DateAmount(parse("2016-01-01"), new BigDecimal("-1000000")),
+                            new DateAmount(parse("2016-01-01"), new BigDecimal("-818000"))))
+                    .build());
+            assertEquals(0, r4.compareTo(r1), () -> "r1=%s, r4=%s".formatted(r1, r4));
         }
 
     }
