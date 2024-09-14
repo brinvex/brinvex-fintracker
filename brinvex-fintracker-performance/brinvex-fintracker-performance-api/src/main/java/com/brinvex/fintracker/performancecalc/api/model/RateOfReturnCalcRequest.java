@@ -8,18 +8,18 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 
-public record MwrCalcRequest(
+public record RateOfReturnCalcRequest(
         LocalDate periodStartDateIncl,
         LocalDate periodEndDateIncl,
         BigDecimal startValueExcl,
         BigDecimal endValueIncl,
         Collection<DateAmount> cashFlows,
         FlowTiming flowTiming,
-        MwrCalcMethod calcMethod,
+        RateOfReturnCalcMethod calcMethod,
         boolean annualize
 ) {
 
-    public MwrCalcRequest(
+    public RateOfReturnCalcRequest(
             LocalDate periodStartDateIncl,
             LocalDate periodEndDateIncl,
             BigDecimal startValueExcl,
@@ -40,14 +40,14 @@ public record MwrCalcRequest(
 
     @Builder(toBuilder = true)
     @SuppressWarnings("SimplifiableConditionalExpression")
-    private MwrCalcRequest(
+    private RateOfReturnCalcRequest(
             LocalDate periodStartDateIncl,
             LocalDate periodEndDateIncl,
             BigDecimal startValueExcl,
             BigDecimal endValueIncl,
             Collection<DateAmount> cashFlows,
             FlowTiming flowTiming,
-            MwrCalcMethod calcMethod,
+            RateOfReturnCalcMethod calcMethod,
             Boolean annualize
     ) {
         this(
@@ -57,7 +57,7 @@ public record MwrCalcRequest(
                 endValueIncl == null ? BigDecimal.ZERO : endValueIncl,
                 cashFlows == null ? Collections.emptyList() : cashFlows,
                 flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming,
-                calcMethod == null ? MwrCalcMethod.MODIFIED_DIETZ : calcMethod,
+                calcMethod == null ? RateOfReturnCalcMethod.MWR_MODIFIED_DIETZ : calcMethod,
                 annualize == null ? true : annualize
         );
         if (periodStartDateIncl.isAfter(periodEndDateIncl)) {

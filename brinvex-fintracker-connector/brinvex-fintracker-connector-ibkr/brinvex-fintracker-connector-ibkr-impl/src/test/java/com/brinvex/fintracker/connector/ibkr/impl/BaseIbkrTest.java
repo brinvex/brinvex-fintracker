@@ -1,9 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl;
 
-import com.brinvex.fintracker.core.api.FinTracker;
-import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
 import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
-import com.brinvex.fintracker.test.support.TestSupport;
+import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
+import com.brinvex.fintracker.core.api.FinTracker;
+import com.brinvex.fintracker.core.api.internal.FinTrackerModule;
+import com.brinvex.fintracker.test.support.ModuleTestSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,11 +14,11 @@ abstract class BaseIbkrTest {
 
     protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
-    protected final TestSupport testSupport = new TestSupport("connector-ibkr");
+    protected final ModuleTestSupport moduleTestSupport = new ModuleTestSupport(IbkrModule.class);
 
-    protected final IbkrAccount account1 = IbkrAccount.of(testSupport.subProperties("account1"));
+    protected final IbkrAccount account1 = IbkrAccount.of(moduleTestSupport.subProperties("account1"));
 
-    protected final IbkrAccount account2 = IbkrAccount.of(testSupport.subProperties("account2"));
+    protected final IbkrAccount account2 = IbkrAccount.of(moduleTestSupport.subProperties("account2"));
 
     public boolean account1IsNotNull() {
         return account1 != null;
@@ -35,12 +36,12 @@ abstract class BaseIbkrTest {
         return account2 != null && account2.credentials() != null;
     }
 
-    protected IbkrModule createIbkrModule(String workspace) {
-        return testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace)).get(IbkrModule.class);
+    protected IbkrModule newIbkrModule(String dmsWorkspace) {
+        return newFinTracker(dmsWorkspace).module(IbkrModule.class);
     }
 
-    protected FinTracker createFinTracker(String workspace) {
-        return testSupport.finTracker(Map.of(IbkrModule.PROP_DMS_WORKSPACE, workspace));
+    protected FinTracker newFinTracker(String dmsWorkspace) {
+        return moduleTestSupport.finTracker(Map.of(FinTrackerModule.PropKey.dmsWorkspace, dmsWorkspace));
     }
 
 }

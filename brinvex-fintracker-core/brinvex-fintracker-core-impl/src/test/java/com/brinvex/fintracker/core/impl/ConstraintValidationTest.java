@@ -1,6 +1,5 @@
 package com.brinvex.fintracker.core.impl;
 
-import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.core.api.FinTrackerConfig;
 import com.brinvex.fintracker.core.api.facade.ValidatorFacade;
 import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
@@ -8,8 +7,6 @@ import com.brinvex.fintracker.core.api.model.domain.FinTransactionType;
 import com.brinvex.fintracker.core.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
 import jakarta.validation.ConstraintViolation;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,9 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SuppressWarnings("LoggingSimilarMessage")
 public class ConstraintValidationTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConstraintValidationTest.class);
-
-    private final ValidatorFacade validator = FinTracker.get(FinTrackerConfig.builder().build()).validator();
+    private final ValidatorFacade validator = new FinTrackerSharedContext(new FinTrackerConfig()).validator();
 
     @Test
     void deposit() {

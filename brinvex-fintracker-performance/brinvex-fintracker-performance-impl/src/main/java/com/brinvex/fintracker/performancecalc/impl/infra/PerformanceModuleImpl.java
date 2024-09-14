@@ -1,22 +1,21 @@
 package com.brinvex.fintracker.performancecalc.impl.infra;
 
-import com.brinvex.fintracker.core.api.FinTracker;
-import com.brinvex.fintracker.core.api.FinTrackerModule;
+import com.brinvex.fintracker.core.api.internal.FinTrackerModule;
+import com.brinvex.fintracker.core.api.internal.FinTrackerModuleContext;
 import com.brinvex.fintracker.performancecalc.api.PerformanceModule;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.fintracker.performancecalc.impl.service.PerformanceCalculatorImpl;
 
-public class PerformanceModuleImpl implements PerformanceModule, FinTrackerModule.ApplicationAware {
+public class PerformanceModuleImpl implements PerformanceModule, FinTrackerModule {
 
-    private FinTracker finTracker;
+    private final FinTrackerModuleContext finTrackerCtx;
 
-    @Override
-    public PerformanceCalculator performanceCalculator() {
-        return finTracker.get(PerformanceCalculator.class, PerformanceCalculatorImpl::new);
+    public PerformanceModuleImpl(FinTrackerModuleContext finTrackerCtx) {
+        this.finTrackerCtx = finTrackerCtx;
     }
 
     @Override
-    public void setFinTracker(FinTracker finTracker) {
-        this.finTracker = finTracker;
+    public PerformanceCalculator performanceCalculator() {
+        return finTrackerCtx.singletonService(PerformanceCalculator.class, PerformanceCalculatorImpl::new);
     }
 }

@@ -4,6 +4,7 @@ package com.brinvex.fintracker.connector.ibkr.impl;
 import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
+import com.brinvex.util.dms.api.Dms;
 import com.brinvex.util.dms.api.DmsFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -25,9 +26,9 @@ class IbkrDmsTest extends BaseIbkrTest {
     @Test
     void dmsConsistency() {
         String dmsWorkspace = "dms-tmp1";
-        IbkrModule ibkrModule = createIbkrModule(dmsWorkspace);
-        DmsFactory dmsFactory = testSupport.dmsFactory();
-        com.brinvex.util.dms.api.Dms dms = dmsFactory.getDms(dmsWorkspace);
+        IbkrModule ibkrModule = newIbkrModule(dmsWorkspace);
+        DmsFactory dmsFactory = moduleTestSupport.dmsFactory();
+        Dms dms = dmsFactory.getDms(IbkrModule.class.getSimpleName() + "/" + dmsWorkspace);
         dms.resetWorkspace();
         dms.purgeWorkspace(LocalDateTime.now());
         IbkrDms ibkrDms = ibkrModule.dms();

@@ -1,7 +1,5 @@
-package com.brinvex.fintracker.connector.ibkr.impl.infra;
+package com.brinvex.fintracker.connector.ibkr.impl;
 
-import com.brinvex.fintracker.core.api.FinTracker;
-import com.brinvex.fintracker.core.api.FinTrackerModule;
 import com.brinvex.fintracker.connector.ibkr.api.IbkrModule;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrDms;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFetcher;
@@ -15,54 +13,51 @@ import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrFinTransactionMapp
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrPtfProgressProviderImpl;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementMergerImpl;
 import com.brinvex.fintracker.connector.ibkr.impl.service.IbkrStatementParserImpl;
-import com.brinvex.util.dms.api.Dms;
+import com.brinvex.fintracker.core.api.internal.FinTrackerModule;
+import com.brinvex.fintracker.core.api.internal.FinTrackerModuleContext;
 
-public class IbkrModuleImpl implements IbkrModule, FinTrackerModule.ApplicationAware {
+public class IbkrModuleImpl implements IbkrModule, FinTrackerModule {
 
-    private FinTracker finTracker;
+    private final FinTrackerModuleContext finTrackerCtx;
+
+    public IbkrModuleImpl(FinTrackerModuleContext finTrackerCtx) {
+        this.finTrackerCtx = finTrackerCtx;
+    }
 
     @Override
     public IbkrStatementMerger statementMerger() {
-        return finTracker.get(IbkrStatementMerger.class, IbkrStatementMergerImpl::new);
+        return finTrackerCtx.singletonService(IbkrStatementMerger.class, IbkrStatementMergerImpl::new);
     }
 
     @Override
     public IbkrStatementParser statementParser() {
-        return finTracker.get(IbkrStatementParser.class, IbkrStatementParserImpl::new);
+        return finTrackerCtx.singletonService(IbkrStatementParser.class, IbkrStatementParserImpl::new);
     }
 
     @Override
     public IbkrFinTransactionMapper finTransactionMapper() {
-        return finTracker.get(IbkrFinTransactionMapper.class, IbkrFinTransactionMapperImpl::new);
+        return finTrackerCtx.singletonService(IbkrFinTransactionMapper.class, IbkrFinTransactionMapperImpl::new);
     }
 
     @Override
     public IbkrDms dms() {
-        return finTracker.get(IbkrDms.class, () -> {
-            String dmsWorkspace = finTracker.property(IbkrModule.PROP_DMS_WORKSPACE, "ibkr");
-            Dms dms = finTracker.dmsFactory().getDms(dmsWorkspace);
-            return new IbkrDmsImpl(dms);
-        });
+        return finTrackerCtx.singletonService(IbkrDms.class, () -> new IbkrDmsImpl(finTrackerCtx.dms()));
     }
 
     @Override
     public IbkrFetcher fetcher() {
-        return finTracker.get(IbkrFetcher.class, () -> new IbkrFetcherImpl(finTracker.httpClientFacade()));
+        return finTrackerCtx.singletonService(IbkrFetcher.class, () -> new IbkrFetcherImpl(finTrackerCtx.httpClientFacade()));
     }
 
     @Override
     public IbkrPtfProgressProvider ptfProgressProvider() {
-        return finTracker.get(IbkrPtfProgressProvider.class, () -> new IbkrPtfProgressProviderImpl(
+        return finTrackerCtx.singletonService(IbkrPtfProgressProvider.class, () -> new IbkrPtfProgressProviderImpl(
                 dms(),
                 statementParser(),
                 fetcher(),
                 statementMerger(),
-                finTransactionMapper()
+                finTransactionMapper(),
+                finTrackerCtx.validator()
         ));
-    }
-
-    @Override
-    public void setFinTracker(FinTracker finTracker) {
-        this.finTracker = finTracker;
     }
 }

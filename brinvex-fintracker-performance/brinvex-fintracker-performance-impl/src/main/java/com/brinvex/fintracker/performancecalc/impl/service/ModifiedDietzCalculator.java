@@ -1,8 +1,9 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
+import com.brinvex.fintracker.core.api.exception.CalculationException;
 import com.brinvex.fintracker.core.api.model.general.DateAmount;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
-import com.brinvex.fintracker.performancecalc.api.model.MwrCalcRequest;
+import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcRequest;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ import static java.util.stream.Collectors.toCollection;
 
 public class ModifiedDietzCalculator {
 
-    public static BigDecimal calculate(MwrCalcRequest mwrCalcReq) {
+    public static BigDecimal calculate(RateOfReturnCalcRequest mwrCalcReq) {
         return calculateMwrReturn(
                 mwrCalcReq.periodStartDateIncl(),
                 mwrCalcReq.periodEndDateIncl(),
@@ -42,6 +43,7 @@ public class ModifiedDietzCalculator {
             FlowTiming flowTiming,
             boolean annualize
     ) {
+        BigDecimal adjBeginValueExcl;
         LocalDate adjBeginDateIncl;
         if (beginValueExcl.compareTo(ZERO) == 0) {
             if (cashFlows.isEmpty()) {
@@ -58,7 +60,7 @@ public class ModifiedDietzCalculator {
                         .map(DateAmount::date)
                         .takeWhile(d -> d.isEqual(firstCashFlowDate))
                         .count());
-                beginValueExcl = sortedCashFlows.subList(0, firstDateCashFlowsCount)
+                adjBeginValueExcl = sortedCashFlows.subList(0, firstDateCashFlowsCount)
                         .stream()
                         .map(DateAmount::amount)
                         .reduce(ZERO, BigDecimal::add);
@@ -81,13 +83,15 @@ public class ModifiedDietzCalculator {
                 }
             }
         } else {
+            adjBeginValueExcl = beginValueExcl;
             adjBeginDateIncl = beginDateIncl;
         }
 
+        BigDecimal adjEndValueIncl;
         LocalDate adjEndDateIncl;
         if (endValueIncl.compareTo(ZERO) == 0) {
             if (cashFlows.isEmpty()) {
-                Validate.isTrue(beginValueExcl.compareTo(ZERO) == 0);
+                Validate.isTrue(adjBeginValueExcl.compareTo(ZERO) == 0);
                 return ZERO;
             } else {
                 List<DateAmount> sortedCashFlows = cashFlows
@@ -100,7 +104,7 @@ public class ModifiedDietzCalculator {
                         .map(DateAmount::date)
                         .takeWhile(d -> !d.isEqual(lastCashFlowDate))
                         .count());
-                endValueIncl = sortedCashFlows.subList(nonLastDateCashFlowsCount, sortedCashFlows.size())
+                adjEndValueIncl = sortedCashFlows.subList(nonLastDateCashFlowsCount, sortedCashFlows.size())
                         .stream()
                         .map(DateAmount::amount)
                         .reduce(ZERO, BigDecimal::add)
@@ -124,8 +128,14 @@ public class ModifiedDietzCalculator {
                 }
             }
         } else {
+            adjEndValueIncl = endValueIncl;
             adjEndDateIncl = endDateIncl;
         }
+
+        Validate.isTrue(adjBeginValueExcl.compareTo(ZERO) > 0, () -> "adjBeginValueExcl must be greater than zero, given: %s"
+                .formatted(adjBeginValueExcl));
+        Validate.isTrue(adjEndValueIncl.compareTo(ZERO) > 0, () -> "adjEndValueIncl must be greater than zero, given: %s"
+                .formatted(adjEndValueIncl));
 
         BigDecimal totalDays = new BigDecimal(DAYS.between(adjBeginDateIncl, adjEndDateIncl) + 1);
 
@@ -149,11 +159,24 @@ public class ModifiedDietzCalculator {
             cashFlowSum = cashFlowSum.add(cashFlowValue);
             weightedCashFlowSum = weightedCashFlowSum.add(weightedCashFlowValue);
         }
+        if (adjBeginValueExcl.compareTo(weightedCashFlowSum.negate()) <= 0) {
+            //See https://en.wikipedia.org/wiki/Modified_Dietz_method#Negative_or_zero_average_capital
+            throw new CalculationException((
+                    "Could not calculate ModifiedDietz return of given data: " +
+                    "adjBeginValueExcl=%s, adjEndValueIncl=%s, " +
+                    "weightedCashFlowSum=%s, cashFlowSum=%s, " +
+                    "beginDateIncl=%s, endDateIncl=%s")
+                    .formatted(
+                            adjBeginValueExcl, adjEndValueIncl,
+                            weightedCashFlowSum, cashFlows,
+                            beginDateIncl, endDateIncl
+                    ));
+        }
 
-        BigDecimal numerator = endValueIncl.subtract(beginValueExcl).subtract(cashFlowSum);
-        BigDecimal denominator = beginValueExcl.add(weightedCashFlowSum);
+        BigDecimal gain = adjEndValueIncl.subtract(adjBeginValueExcl).subtract(cashFlowSum);
+        BigDecimal averageCapital = adjBeginValueExcl.add(weightedCashFlowSum);
 
-        BigDecimal cumulativeReturn = numerator.divide(denominator, 20, RoundingMode.HALF_UP);
+        BigDecimal cumulativeReturn = gain.divide(averageCapital, 20, RoundingMode.HALF_UP);
         if (annualize) {
             return CalcUtil.annualizeReturn(cumulativeReturn, beginDateIncl, endDateIncl);
         } else {

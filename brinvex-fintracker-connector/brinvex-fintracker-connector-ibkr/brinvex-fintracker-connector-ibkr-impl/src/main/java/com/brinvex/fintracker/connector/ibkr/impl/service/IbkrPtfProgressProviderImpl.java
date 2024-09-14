@@ -1,8 +1,10 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
 import com.brinvex.fintracker.core.api.exception.AssistanceRequiredException;
+import com.brinvex.fintracker.core.api.facade.ValidatorFacade;
 import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
 import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.core.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
 import com.brinvex.fintracker.core.api.model.general.DateAmount;
 import com.brinvex.fintracker.core.api.provider.PtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
@@ -19,6 +21,7 @@ import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
 import com.brinvex.util.java.validation.Assert;
+import jakarta.validation.ConstraintViolation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +34,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -64,18 +68,22 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
 
     private final IbkrFinTransactionMapper finTransactionMapper;
 
+    private final ValidatorFacade validatorFacade;
+
     public IbkrPtfProgressProviderImpl(
             IbkrDms dms,
             IbkrStatementParser parser,
             IbkrFetcher fetcher,
             IbkrStatementMerger statementMerger,
-            IbkrFinTransactionMapper finTransactionMapper
+            IbkrFinTransactionMapper finTransactionMapper,
+            ValidatorFacade validatorFacade
     ) {
         this.dms = dms;
         this.parser = parser;
         this.fetcher = fetcher;
         this.statementMerger = statementMerger;
         this.finTransactionMapper = finTransactionMapper;
+        this.validatorFacade = validatorFacade;
     }
 
     @Override
@@ -109,8 +117,8 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
     @SuppressWarnings("UnnecessaryLocalVariable")
     private PtfProgress getPtfProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online, int recursionDepth) {
         LOG.debug("getPtfProgress({}, {}-{}, staleTolerance={}, online={}, recursionDepth={})", account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth);
-        Assert.isTrue(recursionDepth < 10, () -> "getPtfProgress - recursionDepth must me less then 10, %s, %s-%s, staleTolerance=%s, online=%s, recursionDepth=%s)"
-                .formatted(account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth));
+        Assert.isTrue(recursionDepth < 10, () -> "getPtfProgress - exceeded recursionDepth %s, %s, %s-%s, staleTolerance=%s, online=%s)"
+                .formatted(recursionDepth, account, fromDateIncl, toDateIncl, staleTolerance, online));
         IbkrAccount.MigratedAccount migratedAccount = account.migratedAccount();
 
         PtfProgress resultProgress;
@@ -166,6 +174,13 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
                     "Missing PtfProgress data: accountId=%s, fromDayIncl=%s, toDayIncl=%s, migratedAccount=%s, credentials=%s"
                             .formatted(account.accountId(), fromDateIncl, toDateIncl, account.migratedAccount(), account.credentials() == null));
         }
+
+        for (FinTransaction finTransaction : resultProgress.transactions()) {
+            Set<ConstraintViolation<FinTransactionConstraints>> violations = validatorFacade.validate(FinTransactionConstraints.of(finTransaction));
+            Assert.isTrue(violations.isEmpty(), () -> "FinTransactionConstraints violations - accountId=%s, finTransaction=%s, violations=%s"
+                    .formatted(account.accountId(), finTransaction, violations));
+        }
+
         return resultProgress;
     }
 
