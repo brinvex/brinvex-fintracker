@@ -22,7 +22,7 @@ class IbkrFetcherTest extends BaseIbkrTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void fetch() throws InterruptedException {
-        IbkrModule ibkrModule = moduleTestSupport.finTracker().module(IbkrModule.class);
+        IbkrModule ibkrModule = moduleTestSupport.finTracker().get(IbkrModule.class);
         IbkrFetcher fetcher = ibkrModule.fetcher();
         IbkrStatementParser parser = ibkrModule.statementParser();
 

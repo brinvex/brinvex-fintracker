@@ -4,7 +4,7 @@ import com.brinvex.fintracker.core.api.internal.FinTrackerModule;
 
 public interface FinTracker {
 
-    <MODULE extends FinTrackerModule> MODULE module(Class<MODULE> moduleType);
+    <MODULE extends FinTrackerModule> MODULE get(Class<MODULE> moduleType);
 
     static FinTracker newInstance() {
         return newInstance(new FinTrackerConfig());

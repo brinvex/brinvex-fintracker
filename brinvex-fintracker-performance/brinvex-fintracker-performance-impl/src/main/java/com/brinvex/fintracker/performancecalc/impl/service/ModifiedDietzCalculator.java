@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.toCollection;
 
 public class ModifiedDietzCalculator {
 
-    public static BigDecimal calculate(RateOfReturnCalcRequest mwrCalcReq) {
+    public static BigDecimal calculateMwrReturn(RateOfReturnCalcRequest mwrCalcReq) {
         return calculateMwrReturn(
                 mwrCalcReq.periodStartDateIncl(),
                 mwrCalcReq.periodEndDateIncl(),
@@ -176,11 +176,11 @@ public class ModifiedDietzCalculator {
         BigDecimal gain = adjEndValueIncl.subtract(adjBeginValueExcl).subtract(cashFlowSum);
         BigDecimal averageCapital = adjBeginValueExcl.add(weightedCashFlowSum);
 
-        BigDecimal cumulativeReturn = gain.divide(averageCapital, 20, RoundingMode.HALF_UP);
+        BigDecimal cumulReturn = gain.divide(averageCapital, 20, RoundingMode.HALF_UP);
         if (annualize) {
-            return CalcUtil.annualizeReturn(cumulativeReturn, beginDateIncl, endDateIncl);
+            return CalcUtil.annualizeReturn(cumulReturn, beginDateIncl, endDateIncl);
         } else {
-            return cumulativeReturn;
+            return cumulReturn;
         }
     }
 }

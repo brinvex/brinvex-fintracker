@@ -13,34 +13,72 @@ If you have any questions, feedback, or need assistance, please reach out to _in
 I am also open to exploring work partnerships of any kind. Whether you’re interested in collaboration, 
 integration, or other opportunities, feel free to get in touch—I’d love to hear from you!
 
-### Maven Dependencies
-
-    <properties>
-         <brinvex-fintracker.version>0.0.23</brinvex-fintracker.version>
-    </properties>
-    
-    <repository>
-        <id>repository.brinvex</id>
-        <name>Brinvex Repository</name>
-        <url>https://github.com/brinvex/brinvex-repo/raw/main/</url>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </repository>
-    
-    <dependency>
-        <groupId>com.brinvex.fintracker</groupId>
-        <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
-        <version>${brinvex-fintracker.version}</version>
-    </dependency>
-    <dependency>
-        <groupId>com.brinvex.fintracker</groupId>
-        <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
-        <version>${brinvex-fintracker.version}</version>
-        <scope>runtime</scope>
-    </dependency>
-
 ## Features
+
+### Investment Performance Calculator
+The _Performance_ module in _Brinvex FinTracker_ provides powerful tools for analyzing the performance of financial portfolios. 
+
+**True Time-Weighted Return (TWR)**  is often the preferred method for evaluating portfolio performance
+as it eliminates the impact of cash flows.
+This metric focuses solely on the portfolio's ability to generate returns,
+making it ideal for performance comparison across different funds or investment strategies.
+````
+PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
+RateOfReturnCalcRequest twrCalcReq = RateOfReturnCalcRequest.builder()
+        .calcMethod(TWR_TRUE)
+        .periodStartDateIncl(parse("2020-06-01"))
+        .periodEndDateIncl(parse("2020-06-30"))
+        .startValueExcl(new BigDecimal("100000"))
+        .endValueIncl(new BigDecimal("135000"))
+        .cashFlows(List.of(
+                new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
+                new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
+        ))
+        .assetValues(List.of(
+                new DateAmount(parse("2020-06-05"), new BigDecimal("101000")),
+                new DateAmount(parse("2020-06-10"), new BigDecimal("132000"))
+        ))
+        .flowTiming(BEGINNING_OF_DAY)
+        .annualize(false)
+        .build();
+BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(twrCalcReq);
+assertEquals("19.6053", twrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
+
+````
+
+**Modified Dietz** is a simplified version of the **Money Weighted Return (MWR)** calculation. 
+It adjusts for the timing and size of cash flows to provide a performance 
+measure that accounts for external influences like deposits and withdrawals. 
+This method is widely used for its ease of computation and accuracy 
+in approximating the performance of investment portfolios over time.
+It is one of the methodologies of calculating returns recommended 
+by the Investment Performance Council (IPC) as part of their Global Investment Performance Standards (GIPS).
+
+````
+PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
+RateOfReturnCalcRequest mwrCalcReq1 = RateOfReturnCalcRequest.builder()
+        .calcMethod(MWR_MODIFIED_DIETZ)
+        .periodStartDateIncl(parse("2020-06-01"))
+        .periodEndDateIncl(parse("2020-06-30"))
+        .startValueExcl(new BigDecimal("100000"))
+        .endValueIncl(new BigDecimal("135000"))
+        .cashFlows(List.of(
+                new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
+                new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
+        ))
+        .flowTiming(BEGINNING_OF_DAY)
+        .annualize(false)
+        .build();
+
+BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(mwrCalcReq1);
+assertEquals("15.2239", mwrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
+````    
+
+Here are some good resources to learn more about investment performance calculation:  
+https://canadianportfoliomanagerblog.com/calculating-your-modified-dietz-rate-of-return  
+https://en.wikipedia.org/wiki/Modified_Dietz_method  
+https://en.wikipedia.org/wiki/Time-weighted_return  
+https://www.gipsstandards.org  
 
 ### Account Statement Management
 
@@ -68,6 +106,49 @@ This feature ensures that all statements are securely saved and easily accessibl
 Additionally, the system detects and cleans overlapping statements, 
 preventing duplication and maintaining the integrity of data.
 
+## Maven Dependencies
+It's not necessary to include all dependencies.
+You only need to import the ones relevant to your specific use case.
+For example, if you're using the performance calculation features,
+you can include only the ``performance-api`` and ``performance-impl`` dependencies.
+If you need integration with IBKR, import the ``connector-ibkr-api`` and ``connector-ibkr-impl`` dependencies.
+
+    <properties>
+         <brinvex-fintracker.version>0.0.23</brinvex-fintracker.version>
+    </properties>
+    
+    <repository>
+        <id>repository.brinvex</id>
+        <name>Brinvex Repository</name>
+        <url>https://github.com/brinvex/brinvex-repo/raw/main/</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+    
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-performance-api</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-performance-impl</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+        <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-connector-ibkr-api</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.brinvex.fintracker</groupId>
+        <artifactId>brinvex-fintracker-connector-ibkr-impl</artifactId>
+        <version>${brinvex-fintracker.version}</version>
+        <scope>runtime</scope>
+    </dependency>
 
 
 ## Requirements

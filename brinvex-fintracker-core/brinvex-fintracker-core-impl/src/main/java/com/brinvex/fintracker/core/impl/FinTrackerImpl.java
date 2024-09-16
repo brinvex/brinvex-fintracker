@@ -32,7 +32,7 @@ public class FinTrackerImpl implements FinTracker {
     }
 
     @Override
-    public <MODULE extends FinTrackerModule> MODULE module(Class<MODULE> moduleType) {
+    public <MODULE extends FinTrackerModule> MODULE get(Class<MODULE> moduleType) {
         FinTrackerModule module = modules.get(moduleType);
         if (module == null) {
             synchronized (modules) {

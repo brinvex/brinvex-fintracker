@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.performancecalc.impl.infra;
+package com.brinvex.fintracker.performancecalc.impl;
 
 import com.brinvex.fintracker.core.api.internal.FinTrackerModule;
 import com.brinvex.fintracker.core.api.internal.FinTrackerModuleContext;

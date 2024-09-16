@@ -2,7 +2,6 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
-import com.brinvex.fintracker.performancecalc.api.model.TwrDetail;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

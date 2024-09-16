@@ -39,7 +39,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     void portfolioProgress_iterative() {
         String workspace = "dms-stable";
         FinTracker finTracker = newFinTracker(workspace);
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrDms ibkrDms = ibkrModule.dms();
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
         LocalDate today = now();
@@ -57,7 +57,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     void portfolioProgress_spinOff() {
         String workspace = "dms-stable";
         FinTracker finTracker = newFinTracker(workspace);
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(
@@ -83,7 +83,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     void portfolioProgress_paymentOfLieuOfDividends() {
         String workspace = "dms-stable";
         FinTracker finTracker = newFinTracker(workspace);
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         {
@@ -118,7 +118,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
 
         {
             FinTracker finTracker = newFinTracker("dms-stable-20240418");
-            IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+            IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
             IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
             List<FinTransaction> actTrans1;
@@ -153,7 +153,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
         }
         {
             FinTracker finTracker = newFinTracker("dms-stable");
-            IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+            IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
             IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
             {
@@ -187,7 +187,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @Test
     void ptfProgress_accountMigration_oldNavZero() {
         FinTracker finTracker = newFinTracker("dms-stable-20240904");
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         {
@@ -207,7 +207,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @Test
     void ptfProgress_accountMigration_newNavSameAsOld() {
         FinTracker finTracker = newFinTracker("dms-stable");
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         {
@@ -231,7 +231,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @Test
     void ptfProgress_accountMigration_dividendAccruals() {
         FinTracker finTracker = newFinTracker("dms-stable-20240904");
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         {
@@ -270,7 +270,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @Test
     void ptfProgress_accountMigration_navDate() {
         FinTracker finTracker = newFinTracker("dms-stable");
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(
@@ -282,7 +282,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
     @Test
     void ptfProgress_corpActions() {
         FinTracker finTracker = newFinTracker("dms-stable");
-        IbkrModule ibkrModule = finTracker.module(IbkrModule.class);
+        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         {

@@ -9,60 +9,46 @@ import java.util.Collection;
 import java.util.Collections;
 
 public record RateOfReturnCalcRequest(
+        RateOfReturnCalcMethod calcMethod,
         LocalDate periodStartDateIncl,
         LocalDate periodEndDateIncl,
         BigDecimal startValueExcl,
         BigDecimal endValueIncl,
         Collection<DateAmount> cashFlows,
+        Collection<DateAmount> assetValues,
         FlowTiming flowTiming,
-        RateOfReturnCalcMethod calcMethod,
         boolean annualize
 ) {
 
-    public RateOfReturnCalcRequest(
-            LocalDate periodStartDateIncl,
-            LocalDate periodEndDateIncl,
-            BigDecimal startValueExcl,
-            BigDecimal endValueIncl,
-            Collection<DateAmount> cashFlows
-    ) {
-        this(
-                periodStartDateIncl,
-                periodEndDateIncl,
-                startValueExcl,
-                endValueIncl,
-                cashFlows,
-                null,
-                null,
-                null
-        );
-    }
-
     @Builder(toBuilder = true)
-    @SuppressWarnings("SimplifiableConditionalExpression")
-    private RateOfReturnCalcRequest(
-            LocalDate periodStartDateIncl,
-            LocalDate periodEndDateIncl,
-            BigDecimal startValueExcl,
-            BigDecimal endValueIncl,
-            Collection<DateAmount> cashFlows,
-            FlowTiming flowTiming,
-            RateOfReturnCalcMethod calcMethod,
-            Boolean annualize
-    ) {
-        this(
-                periodStartDateIncl,
-                periodEndDateIncl,
-                startValueExcl == null ? BigDecimal.ZERO : startValueExcl,
-                endValueIncl == null ? BigDecimal.ZERO : endValueIncl,
-                cashFlows == null ? Collections.emptyList() : cashFlows,
-                flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming,
-                calcMethod == null ? RateOfReturnCalcMethod.MWR_MODIFIED_DIETZ : calcMethod,
-                annualize == null ? true : annualize
-        );
+    public RateOfReturnCalcRequest {
+        if (calcMethod == null) {
+            throw new IllegalArgumentException("calcMethod must not be null");
+        }
+        if (periodStartDateIncl == null) {
+            throw new IllegalArgumentException("periodStartDateIncl must not be null");
+        }
+        if (periodEndDateIncl == null) {
+            throw new IllegalArgumentException("periodEndDateIncl must not be null");
+        }
         if (periodStartDateIncl.isAfter(periodEndDateIncl)) {
             throw new IllegalArgumentException("periodStartDateIncl must be before periodEndDateIncl, given: %s, %s"
                     .formatted(periodStartDateIncl, periodEndDateIncl));
+        }
+        if (startValueExcl == null) {
+            startValueExcl = BigDecimal.ZERO;
+        }
+        if (endValueIncl == null) {
+            endValueIncl = BigDecimal.ZERO;
+        }
+        if (cashFlows == null) {
+            cashFlows = Collections.emptyList();
+        }
+        if (assetValues == null) {
+            assetValues = Collections.emptyList();
+        }
+        if (flowTiming == null) {
+            flowTiming = FlowTiming.BEGINNING_OF_DAY;
         }
     }
 }

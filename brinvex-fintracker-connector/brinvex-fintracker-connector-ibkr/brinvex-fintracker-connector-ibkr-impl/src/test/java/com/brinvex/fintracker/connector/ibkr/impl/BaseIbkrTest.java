@@ -37,7 +37,7 @@ abstract class BaseIbkrTest {
     }
 
     protected IbkrModule newIbkrModule(String dmsWorkspace) {
-        return newFinTracker(dmsWorkspace).module(IbkrModule.class);
+        return newFinTracker(dmsWorkspace).get(IbkrModule.class);
     }
 
     protected FinTracker newFinTracker(String dmsWorkspace) {
