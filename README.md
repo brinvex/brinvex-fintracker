@@ -24,13 +24,13 @@ This metric focuses solely on the portfolio's ability to generate returns,
 making it ideal for performance comparison across different funds or investment strategies.
 ````
 PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
-        .calcMethod(TWR_TRUE)
-        .periodStartDateIncl(parse("2020-06-01"))
-        .periodEndDateIncl(parse("2020-06-30"))
-        .startValueExcl(new BigDecimal("100000"))
-        .endValueIncl(new BigDecimal("135000"))
-        .cashFlows(List.of(
+BigDecimal twrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
+        .calcMethod(TRUE_TWR)
+        .startDateIncl(parse("2020-06-01"))
+        .endDateIncl(parse("2020-06-30"))
+        .startAssetValueExcl(new BigDecimal("100000"))
+        .endAssetValueIncl(new BigDecimal("135000"))
+        .flows(List.of(
                 new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
                 new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
         ))
@@ -39,9 +39,9 @@ BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequ
                 new DateAmount(parse("2020-06-10"), new BigDecimal("132000"))
         ))
         .flowTiming(BEGINNING_OF_DAY)
-        .annualize(false)
+        .annualization(DO_NOT_ANNUALIZE)
         .build());
-assertEquals("19.6053", twrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
+assertEquals("0.196053", twrReturn.toString());
 
 ````
 
@@ -55,20 +55,20 @@ by the Investment Performance Council (IPC) as part of their Global Investment P
 
 ````
 PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
-        .calcMethod(MWR_MODIFIED_DIETZ)
-        .periodStartDateIncl(parse("2020-06-01"))
-        .periodEndDateIncl(parse("2020-06-30"))
-        .startValueExcl(new BigDecimal("100000"))
-        .endValueIncl(new BigDecimal("135000"))
-        .cashFlows(List.of(
+BigDecimal mwrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
+        .calcMethod(MODIFIED_DIETZ)
+        .startDateIncl(parse("2020-06-01"))
+        .endDateIncl(parse("2020-06-30"))
+        .startAssetValueExcl(new BigDecimal("100000"))
+        .endAssetValueIncl(new BigDecimal("135000"))
+        .flows(List.of(
                 new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
                 new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
         ))
         .flowTiming(BEGINNING_OF_DAY)
-        .annualize(false)
+        .annualization(DO_NOT_ANNUALIZE)
         .build());
-assertEquals("15.2239", mwrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
+assertEquals("0.152239", mwrReturn.toString());
 ````    
 
 Here are some good resources to learn more about investment performance calculation:  
