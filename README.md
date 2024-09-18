@@ -24,7 +24,7 @@ This metric focuses solely on the portfolio's ability to generate returns,
 making it ideal for performance comparison across different funds or investment strategies.
 ````
 PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-RateOfReturnCalcRequest twrCalcReq = RateOfReturnCalcRequest.builder()
+BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
         .calcMethod(TWR_TRUE)
         .periodStartDateIncl(parse("2020-06-01"))
         .periodEndDateIncl(parse("2020-06-30"))
@@ -40,8 +40,7 @@ RateOfReturnCalcRequest twrCalcReq = RateOfReturnCalcRequest.builder()
         ))
         .flowTiming(BEGINNING_OF_DAY)
         .annualize(false)
-        .build();
-BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(twrCalcReq);
+        .build());
 assertEquals("19.6053", twrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
 
 ````
@@ -56,7 +55,7 @@ by the Investment Performance Council (IPC) as part of their Global Investment P
 
 ````
 PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-RateOfReturnCalcRequest mwrCalcReq1 = RateOfReturnCalcRequest.builder()
+BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
         .calcMethod(MWR_MODIFIED_DIETZ)
         .periodStartDateIncl(parse("2020-06-01"))
         .periodEndDateIncl(parse("2020-06-30"))
@@ -68,9 +67,7 @@ RateOfReturnCalcRequest mwrCalcReq1 = RateOfReturnCalcRequest.builder()
         ))
         .flowTiming(BEGINNING_OF_DAY)
         .annualize(false)
-        .build();
-
-BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(mwrCalcReq1);
+        .build());
 assertEquals("15.2239", mwrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
 ````    
 

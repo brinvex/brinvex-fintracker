@@ -28,7 +28,7 @@ class TwrCalculatorTest {
     void twr_readmeExample() {
         FinTracker finTracker = FinTracker.newInstance();
         PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-        RateOfReturnCalcRequest twrCalcReq = RateOfReturnCalcRequest.builder()
+        BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
                 .calcMethod(TWR_TRUE)
                 .periodStartDateIncl(parse("2020-06-01"))
                 .periodEndDateIncl(parse("2020-06-30"))
@@ -44,8 +44,7 @@ class TwrCalculatorTest {
                 ))
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualize(false)
-                .build();
-        BigDecimal twrReturn = perfCalculator.calculateRateOfReturn(twrCalcReq);
+                .build());
         assertEquals("19.6053", twrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
     }
 

@@ -32,7 +32,7 @@ class ModifiedDietzCalculatorTest {
     void dietz_readmeExample() {
         FinTracker finTracker = FinTracker.newInstance();
         PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-        RateOfReturnCalcRequest mwrCalcReq1 = RateOfReturnCalcRequest.builder()
+        BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(RateOfReturnCalcRequest.builder()
                 .calcMethod(MWR_MODIFIED_DIETZ)
                 .periodStartDateIncl(parse("2020-06-01"))
                 .periodEndDateIncl(parse("2020-06-30"))
@@ -44,9 +44,7 @@ class ModifiedDietzCalculatorTest {
                 ))
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualize(false)
-                .build();
-
-        BigDecimal mwrReturn = perfCalculator.calculateRateOfReturn(mwrCalcReq1);
+                .build());
         assertEquals("15.2239", mwrReturn.multiply(new BigDecimal(100)).setScale(4, HALF_UP).toString());
 
     }
