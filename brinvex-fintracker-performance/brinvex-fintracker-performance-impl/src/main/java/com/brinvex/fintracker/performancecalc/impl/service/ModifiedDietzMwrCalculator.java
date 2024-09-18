@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.SortedMap;
 
+import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeReturn;
 import static java.lang.Math.toIntExact;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -25,7 +26,7 @@ public class ModifiedDietzMwrCalculator {
             BigDecimal endValueIncl,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualizationOption,
+            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -61,6 +62,10 @@ public class ModifiedDietzMwrCalculator {
             adjStartValueExcl = startValueExcl;
             adjStartDateIncl = startDateIncl;
         }
+        if (adjStartValueExcl.compareTo(ZERO) <= 0) {
+            throw new IllegalArgumentException("adjStartValueExcl must be greater than zero, given: %s"
+                    .formatted(adjStartValueExcl));
+        }
 
         BigDecimal adjEndValueIncl;
         LocalDate adjEndDateIncl;
@@ -90,11 +95,9 @@ public class ModifiedDietzMwrCalculator {
             adjEndDateIncl = endDateIncl;
         }
 
-        Validate.isTrue(adjStartValueExcl.compareTo(ZERO) > 0, () -> "adjStartValueExcl must be greater than zero, given: %s"
-                .formatted(adjStartValueExcl));
-
         if (adjEndValueIncl.compareTo(ZERO) <= 0) {
-            return AnnualizationUtil.annualizeReturn(annualizationOption, ONE.negate(), startDateIncl, endDateIncl);
+            //Bankruptcy
+            return annualizeReturn(annualization, ONE.negate(), startDateIncl, endDateIncl);
         }
 
         BigDecimal totalDays = new BigDecimal(DAYS.between(adjStartDateIncl, adjEndDateIncl) + 1);
@@ -137,6 +140,6 @@ public class ModifiedDietzMwrCalculator {
         BigDecimal averageCapital = adjStartValueExcl.add(weightedFlowSum);
 
         BigDecimal cumulReturn = gain.divide(averageCapital, calcScale, roundingMode);
-        return AnnualizationUtil.annualizeReturn(annualizationOption, cumulReturn, startDateIncl, endDateIncl);
+        return annualizeReturn(annualization, cumulReturn, startDateIncl, endDateIncl);
     }
 }

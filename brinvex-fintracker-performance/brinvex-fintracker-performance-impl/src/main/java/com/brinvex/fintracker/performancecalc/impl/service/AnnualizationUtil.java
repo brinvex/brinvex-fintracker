@@ -14,7 +14,9 @@ public class AnnualizationUtil {
             LocalDate startDateIncl,
             LocalDate endDateIncl
     ) {
-        return annualizeGrowthFactor(annualizationOption, cumulativeReturn.add(BigDecimal.ONE), startDateIncl, endDateIncl).subtract(BigDecimal.ONE);
+        BigDecimal cumulFactor = cumulativeReturn.add(BigDecimal.ONE);
+        BigDecimal annFactor = annualizeGrowthFactor(annualizationOption, cumulFactor, startDateIncl, endDateIncl);
+        return annFactor.subtract(BigDecimal.ONE);
     }
 
     public static BigDecimal annualizeGrowthFactor(
@@ -25,6 +27,9 @@ public class AnnualizationUtil {
     ) {
         if (annualizationOption == AnnualizationOption.DO_NOT_ANNUALIZE) {
             return cumulativeGrowthFactor;
+        }
+        if (cumulativeGrowthFactor.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
         }
         LocalDate endDateExcl = endDateIncl.plusDays(1);
         long fullYears = ChronoUnit.YEARS.between(startDateIncl, endDateExcl);

@@ -15,6 +15,7 @@ import java.util.SortedMap;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
+import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeGrowthFactor;
 import static com.brinvex.util.java.DateUtil.minDate;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -27,56 +28,58 @@ public class LinkedTwrCalculator {
             Function<PerfCalcRequest, BigDecimal> subPeriodReturnCalculator,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            Map<LocalDate, BigDecimal> assetValues,
+            SortedMap<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualizationOption,
+            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
         PeriodUnit periodUnit = PeriodUnit.MONTH;
 
-        LocalDate periodStartDateIncl = startDateIncl;
+        LocalDate subPeriodStartDateIncl = startDateIncl;
         BigDecimal cumulTwrFactor = ONE;
-        while (!periodStartDateIncl.isAfter(endDateIncl)) {
-            LocalDate periodStartDateExcl = periodStartDateIncl.minusDays(1);
-            LocalDate periodEndDateIncl = minDate(periodUnit.adjEndDateIncl(periodStartDateIncl), endDateIncl);
-            LocalDate periodEndDateExcl = periodEndDateIncl.plusDays(1);
-            BigDecimal periodStartValueExcl = assetValues.get(periodStartDateExcl);
-            Validate.notNull(periodStartValueExcl, () -> "periodStartValueExcl must not be null, missing asset value for periodStartDateExcl=%s"
-                    .formatted(periodStartDateExcl));
-            BigDecimal periodEndValueIncl = assetValues.get(endDateIncl);
-            Validate.notNull(periodEndValueIncl, () -> "periodEndValueIncl must not be null, missing asset value for endDateIncl=%s"
-                    .formatted(periodEndDateIncl));
+        while (!subPeriodStartDateIncl.isAfter(endDateIncl)) {
+            LocalDate subPeriodStartDateExcl = subPeriodStartDateIncl.minusDays(1);
+            LocalDate subPeriodEndDateIncl = minDate(periodUnit.adjEndDateIncl(subPeriodStartDateIncl), endDateIncl);
+            LocalDate subPeriodEndDateExcl = subPeriodEndDateIncl.plusDays(1);
+            BigDecimal subPeriodStartValueExcl = assetValues.get(subPeriodStartDateExcl);
+            Validate.notNull(subPeriodStartValueExcl, () -> "subPeriodStartValueExcl must not be null, missing asset value for subPeriodStartDateExcl=%s"
+                    .formatted(subPeriodStartDateExcl));
+            BigDecimal subPeriodEndValueIncl = assetValues.get(subPeriodEndDateIncl);
+            Validate.notNull(subPeriodEndValueIncl, () -> "subPeriodEndValueIncl must not be null, missing asset value for endDateIncl=%s"
+                    .formatted(subPeriodEndDateIncl));
 
-            SortedMap<LocalDate, BigDecimal> periodFlows = flows.subMap(periodStartDateIncl, periodEndDateExcl);
+            SortedMap<LocalDate, BigDecimal> subPeriodFlows = flows.subMap(subPeriodStartDateIncl, subPeriodEndDateExcl);
+            SortedMap<LocalDate, BigDecimal> subPeriodAssetValues = assetValues.subMap(subPeriodStartDateExcl, subPeriodEndDateExcl);
 
             BigDecimal subPeriodFactor = ONE.add(subPeriodReturnCalculator.apply(PerfCalcRequest.builder()
                     .calcMethod(subPeriodCalcMethod)
-                    .startDateIncl(periodStartDateExcl)
-                    .endDateIncl(periodEndDateIncl)
-                    .startAssetValueExcl(periodStartValueExcl)
-                    .endAssetValueIncl(periodEndValueIncl)
-                    .flows(periodFlows)
-                    .assetValues(assetValues)
+                    .startDateIncl(subPeriodStartDateIncl)
+                    .endDateIncl(subPeriodEndDateIncl)
+                    .startAssetValueExcl(subPeriodStartValueExcl)
+                    .endAssetValueIncl(subPeriodEndValueIncl)
+                    .flows(subPeriodFlows)
+                    .assetValues(subPeriodAssetValues)
                     .flowTiming(flowTiming)
                     .annualization(DO_NOT_ANNUALIZE)
                     .calcScale(calcScale)
                     .roundingMode(roundingMode)
                     .build()));
 
-            int periodFactorSignum = subPeriodFactor.signum();
-            if (periodFactorSignum == 0) {
+            int subPeriodFactorSignum = subPeriodFactor.signum();
+            if (subPeriodFactorSignum == 0) {
+                //Bankruptcy
                 cumulTwrFactor = ZERO;
                 break;
             } else {
-                Validate.isTrue(periodFactorSignum > 0);
+                Validate.isTrue(subPeriodFactorSignum > 0);
             }
 
             cumulTwrFactor = cumulTwrFactor.multiply(subPeriodFactor).setScale(calcScale, roundingMode);
 
-            periodStartDateIncl = periodEndDateIncl.plusDays(1);
+            subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
         }
-        return AnnualizationUtil.annualizeGrowthFactor(annualizationOption, cumulTwrFactor, startDateIncl, endDateIncl).subtract(ONE);
+        return annualizeGrowthFactor(annualization, cumulTwrFactor, startDateIncl, endDateIncl).subtract(ONE);
     }
 }

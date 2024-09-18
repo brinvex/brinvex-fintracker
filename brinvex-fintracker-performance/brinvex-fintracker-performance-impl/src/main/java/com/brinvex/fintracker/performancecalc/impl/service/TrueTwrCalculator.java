@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
+import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeGrowthFactor;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
@@ -24,7 +25,7 @@ public class TrueTwrCalculator {
             Map<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualizationOption,
+            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -47,7 +48,7 @@ public class TrueTwrCalculator {
                     roundingMode
             );
         };
-        BigDecimal annFactor = AnnualizationUtil.annualizeGrowthFactor(annualizationOption, cumulFactor, startDateIncl, endDateIncl);
+        BigDecimal annFactor = annualizeGrowthFactor(annualization, cumulFactor, startDateIncl, endDateIncl);
         return annFactor.subtract(ONE);
     }
 
@@ -93,6 +94,7 @@ public class TrueTwrCalculator {
                 periodFactor = subPeriodEndValue.divide(subPeriodStartValueWithFlow, calcScale, roundingMode);
                 int periodFactorSignum = periodFactor.signum();
                 if (periodFactorSignum == 0) {
+                    //Bankruptcy
                     cumulGrowthFactor = ZERO;
                     break;
                 } else {
@@ -147,6 +149,7 @@ public class TrueTwrCalculator {
                 periodFactor = subPeriodEndValueWithoutFlow.divide(subPeriodStartValue, calcScale, roundingMode);
                 int periodFactorSignum = periodFactor.signum();
                 if (periodFactorSignum == 0) {
+                    //Bankruptcy
                     cumulGrowthFactor = ZERO;
                     break;
                 } else {

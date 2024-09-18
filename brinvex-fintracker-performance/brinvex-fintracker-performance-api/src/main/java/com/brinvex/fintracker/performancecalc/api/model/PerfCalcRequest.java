@@ -83,7 +83,7 @@ public final class PerfCalcRequest {
         this.endDateIncl = endDateIncl;
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
         this.annualization = annualization == null ? AnnualizationOption.DO_NOT_ANNUALIZE : annualization;
-        this.calcScale = calcScale == null ? 16 : calcScale;
+        this.calcScale = calcScale == null ? 20 : calcScale;
         this.resultScale = resultScale == null ? 6 : resultScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
 

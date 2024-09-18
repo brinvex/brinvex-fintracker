@@ -1,7 +1,6 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.exception.NotYetImplementedException;
-import com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod.MwrCalcMethod;
 import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod.TwrCalcMethod;
@@ -9,7 +8,6 @@ import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.util.java.validation.Assert;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class PerformanceCalculatorImpl implements PerformanceCalculator {
 
@@ -50,7 +48,7 @@ public class PerformanceCalculatorImpl implements PerformanceCalculator {
                                     subPeriodCalcReq.endAssetValueIncl(),
                                     subPeriodCalcReq.flows(),
                                     subPeriodCalcReq.flowTiming(),
-                                    AnnualizationOption.DO_NOT_ANNUALIZE,
+                                    subPeriodCalcReq.annualization(),
                                     subPeriodCalcReq.calcScale(),
                                     subPeriodCalcReq.roundingMode()
                             );
