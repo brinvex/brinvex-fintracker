@@ -41,7 +41,7 @@ BigDecimal twrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
         .flowTiming(BEGINNING_OF_DAY)
         .annualization(DO_NOT_ANNUALIZE)
         .build());
-assertEquals("0.196053", twrReturn.toString());
+assertEquals("0.196053", twrReturn.toPlainString());
 
 ````
 
@@ -68,7 +68,7 @@ BigDecimal mwrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
         .flowTiming(BEGINNING_OF_DAY)
         .annualization(DO_NOT_ANNUALIZE)
         .build());
-assertEquals("0.152239", mwrReturn.toString());
+assertEquals("0.152239", mwrReturn.toPlainString());
 ````    
 
 Here are some good resources to learn more about investment performance calculation:  
