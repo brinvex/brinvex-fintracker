@@ -24,7 +24,6 @@ import static java.util.stream.Collectors.toMap;
 @Getter
 @Accessors(fluent = true)
 public final class PerfCalcRequest {
-    private final RateOfReturnCalcMethod calcMethod;
     private final LocalDate startDateIncl;
     private final LocalDate endDateIncl;
     private final BigDecimal startAssetValueExcl;
@@ -38,7 +37,6 @@ public final class PerfCalcRequest {
     private final RoundingMode roundingMode;
 
     private PerfCalcRequest(
-            RateOfReturnCalcMethod calcMethod,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
             BigDecimal startAssetValueExcl,
@@ -51,9 +49,6 @@ public final class PerfCalcRequest {
             Integer resultScale,
             RoundingMode roundingMode
     ) {
-        if (calcMethod == null) {
-            throw new IllegalArgumentException("calcMethod must not be null");
-        }
         if (startDateIncl == null) {
             throw new IllegalArgumentException("startDateIncl must not be null");
         }
@@ -78,7 +73,6 @@ public final class PerfCalcRequest {
         }
         this.startAssetValueExcl = startAssetValueExcl;
         this.endAssetValueIncl = endAssetValueIncl;
-        this.calcMethod = calcMethod;
         this.startDateIncl = startDateIncl;
         this.endDateIncl = endDateIncl;
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
@@ -98,7 +92,6 @@ public final class PerfCalcRequest {
     @Setter
     @Accessors(fluent = true, chain = true)
     public static class PerfCalcRequestBuilder {
-        private RateOfReturnCalcMethod calcMethod;
         private LocalDate startDateIncl;
         private LocalDate endDateIncl;
         private BigDecimal startAssetValueExcl;
@@ -142,7 +135,6 @@ public final class PerfCalcRequest {
 
         public PerfCalcRequest build() {
             return new PerfCalcRequest(
-                    this.calcMethod,
                     this.startDateIncl,
                     this.endDateIncl,
                     this.startAssetValueExcl,
@@ -159,7 +151,6 @@ public final class PerfCalcRequest {
 
         public PerfCalcRequestBuilder copy() {
             return new PerfCalcRequestBuilder()
-                    .calcMethod(calcMethod)
                     .startDateIncl(startDateIncl)
                     .endDateIncl(endDateIncl)
                     .startAssetValueExcl(startAssetValueExcl)

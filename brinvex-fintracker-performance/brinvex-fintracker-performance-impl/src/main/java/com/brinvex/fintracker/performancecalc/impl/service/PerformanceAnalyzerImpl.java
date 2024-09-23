@@ -5,12 +5,12 @@ import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysis;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysisRequest;
-import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod;
-import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod.MwrCalcMethod;
-import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod.TwrCalcMethod;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceAnalyzer;
-import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.LinkedModifiedDietzTwrCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.MwrCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TwrCalculator;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
@@ -35,20 +36,26 @@ import static java.util.stream.Collectors.toMap;
 @SuppressWarnings("DuplicatedCode")
 public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
 
-    private final PerformanceCalculator perfCalculator;
+    private final Function<Class<? extends TwrCalculator>, TwrCalculator> twrCalculatorProvider;
 
-    public PerformanceAnalyzerImpl(PerformanceCalculator perfCalculator) {
-        this.perfCalculator = perfCalculator;
+    private final Function<Class<? extends MwrCalculator>, MwrCalculator> mwrCalculatorProvider;
+
+    public PerformanceAnalyzerImpl(
+            Function<Class<? extends TwrCalculator>, TwrCalculator> twrCalculatorProvider,
+            Function<Class<? extends MwrCalculator>, MwrCalculator> mwrCalculatorProvider
+    ) {
+        this.twrCalculatorProvider = twrCalculatorProvider;
+        this.mwrCalculatorProvider = mwrCalculatorProvider;
     }
 
     @Override
     public List<PerfAnalysis> analyzePerformance(PerfAnalysisRequest perfAnalysisReq) {
         LocalDate startDateIncl = perfAnalysisReq.startDateIncl();
         LocalDate endDateIncl = perfAnalysisReq.endDateIncl();
-        TwrCalcMethod twrCalcMethod = perfAnalysisReq.twrCalcMethod();
-        MwrCalcMethod mwrCalcMethod = perfAnalysisReq.mwrCalcMethod();
         FlowTiming flowTiming = perfAnalysisReq.flowTiming();
         PeriodUnit periodUnit = perfAnalysisReq.resultPeriodUnit();
+        TwrCalculator twrCalculator = twrCalculatorProvider.apply(perfAnalysisReq.twrCalculatorType());
+        MwrCalculator mwrCalculator = mwrCalculatorProvider.apply(perfAnalysisReq.mwrCalculatorType());
 
         SortedMap<LocalDate, DateAmount> flows = perfAnalysisReq.cashFlows()
                 .stream()
@@ -59,7 +66,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 .collect(toMap(DateAmount::date, identity()));
 
         if (periodUnit == PeriodUnit.DAY) {
-            return analyzeDailyPerformance(startDateIncl, endDateIncl, flows, assetValues, twrCalcMethod, mwrCalcMethod, flowTiming);
+            return analyzeDailyPerformance(startDateIncl, endDateIncl, flows, assetValues, twrCalculator, mwrCalculator, flowTiming);
         }
 
         LocalDate startDateExcl = startDateIncl.minusDays(1);
@@ -84,8 +91,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             SortedMap<LocalDate, DateAmount> periodFlows = flows.subMap(periodStartDateIncl, periodEndDateExcl);
             BigDecimal periodFlowSum = periodFlows.values().stream().map(DateAmount::amount).reduce(ZERO, BigDecimal::add);
 
-            BigDecimal periodMwr = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                    .calcMethod(mwrCalcMethod)
+            BigDecimal periodMwr = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(periodStartDateExcl)
                     .endDateIncl(periodEndDateIncl)
                     .startAssetValueExcl(periodStartValueExcl)
@@ -95,8 +101,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                     .flowTiming(flowTiming)
                     .annualization(DO_NOT_ANNUALIZE)
                     .build());
-            BigDecimal cumulMwr = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                    .calcMethod(mwrCalcMethod)
+            BigDecimal cumulMwr = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(startDateIncl)
                     .endDateIncl(periodEndDateIncl)
                     .startAssetValueExcl(startValueExcl)
@@ -109,11 +114,10 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             BigDecimal annMwr = annualizeReturn(ANNUALIZE_IF_OVER_ONE_YEAR, cumulMwr, startDateIncl, periodEndDateIncl);
 
             BigDecimal periodTwr;
-            if (twrCalcMethod == TwrCalcMethod.LINKED_MODIFIED_DIETZ && periodUnit == PeriodUnit.MONTH) {
+            if (periodUnit == PeriodUnit.MONTH && twrCalculator instanceof LinkedModifiedDietzTwrCalculator && mwrCalculator instanceof ModifiedDietzMwrCalculator) {
                 periodTwr = periodMwr;
             } else {
-                periodTwr = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                        .calcMethod(twrCalcMethod)
+                periodTwr = twrCalculator.calculateReturn(PerfCalcRequest.builder()
                         .startDateIncl(periodStartDateExcl)
                         .endDateIncl(periodEndDateIncl)
                         .startAssetValueExcl(periodStartValueExcl)
@@ -152,8 +156,8 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             LocalDate endDateIncl,
             SortedMap<LocalDate, DateAmount> flows,
             Map<LocalDate, DateAmount> assetValues,
-            RateOfReturnCalcMethod twrCalcMethod,
-            RateOfReturnCalcMethod mwrCalcMethod,
+            TwrCalculator twrCalculator,
+            MwrCalculator mwrCalculator,
             FlowTiming flowTiming
     ) {
 
@@ -180,8 +184,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             SortedMap<LocalDate, DateAmount> periodFlows = flows.subMap(periodStartDateIncl, periodEndDateExcl);
             BigDecimal periodFlowSum = periodFlows.values().stream().map(DateAmount::amount).reduce(ZERO, BigDecimal::add);
 
-            BigDecimal periodTwr = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                    .calcMethod(twrCalcMethod)
+            BigDecimal periodTwr = twrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(periodStartDateIncl)
                     .endDateIncl(periodEndDateIncl)
                     .startAssetValueExcl(periodStartValueExcl)
@@ -194,8 +197,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             BigDecimal annTwrFactor = annualizeGrowthFactor(ANNUALIZE_IF_OVER_ONE_YEAR, cumulTwrFactor, startDateIncl, periodEndDateIncl);
 
             BigDecimal periodMwr = periodTwr;
-            BigDecimal cumulMwr = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                    .calcMethod(mwrCalcMethod)
+            BigDecimal cumulMwr = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(startDateIncl)
                     .endDateIncl(periodEndDateIncl)
                     .startAssetValueExcl(startValueExcl)

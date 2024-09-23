@@ -1,8 +1,9 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.exception.CalculationException;
-import com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
+import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -11,22 +12,33 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.SortedMap;
 
-import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeReturn;
 import static java.lang.Math.toIntExact;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.DAYS;
 
-public class ModifiedDietzMwrCalculator {
+public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implements PerformanceCalculator.ModifiedDietzMwrCalculator {
 
-    public static BigDecimal calculateMwrReturn(
+    @Override
+    protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
+        return calculateModifiedDietzMwrCumulReturn(
+                calcReq.startDateIncl(),
+                calcReq.endDateIncl(),
+                calcReq.startAssetValueExcl(),
+                calcReq.endAssetValueIncl(),
+                calcReq.flows(),
+                calcReq.flowTiming(),
+                calcReq.calcScale(),
+                calcReq.roundingMode());
+    }
+
+    private static BigDecimal calculateModifiedDietzMwrCumulReturn(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
             BigDecimal startValueExcl,
             BigDecimal endValueIncl,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -97,7 +109,7 @@ public class ModifiedDietzMwrCalculator {
 
         if (adjEndValueIncl.compareTo(ZERO) <= 0) {
             //Bankruptcy
-            return annualizeReturn(annualization, ONE.negate(), startDateIncl, endDateIncl);
+            return ONE.negate();
         }
 
         BigDecimal totalDays = new BigDecimal(DAYS.between(adjStartDateIncl, adjEndDateIncl) + 1);
@@ -139,7 +151,6 @@ public class ModifiedDietzMwrCalculator {
         BigDecimal gain = adjEndValueIncl.subtract(adjStartValueExcl).subtract(flowSum);
         BigDecimal averageCapital = adjStartValueExcl.add(weightedFlowSum);
 
-        BigDecimal cumulReturn = gain.divide(averageCapital, calcScale, roundingMode);
-        return annualizeReturn(annualization, cumulReturn, startDateIncl, endDateIncl);
+        return gain.divide(averageCapital, calcScale, roundingMode);
     }
 }

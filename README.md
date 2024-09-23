@@ -15,17 +15,18 @@ integration, or other opportunities, feel free to get in touch—I’d love to h
 
 ## Features
 
-### Investment Performance Calculator
-The _Performance_ module in _Brinvex FinTracker_ provides powerful tools for analyzing the performance of financial portfolios. 
+### Investment Performance Calculators
+The _Performance Module_ in _Brinvex FinTracker_ provides powerful tools for analyzing the performance of financial portfolios. 
 
-**True Time-Weighted Return (TWR)**  is often the preferred method for evaluating portfolio performance
+#### True Time-Weighted Rate of Return Calculator
+_True Time-Weighted Return (TWR)_  is often the preferred method for evaluating portfolio performance
 as it eliminates the impact of cash flows.
 This metric focuses solely on the portfolio's ability to generate returns,
 making it ideal for performance comparison across different funds or investment strategies.
 ````
-PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-BigDecimal twrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-        .calcMethod(TRUE_TWR)
+TrueTwrCalculator twrCalculator = finTracker.get(PerformanceModule.class)
+        .trueTwrCalculator();
+BigDecimal twrReturn = twrCalculator.calculateReturn(PerfCalcRequest.builder()
         .startDateIncl(parse("2020-06-01"))
         .endDateIncl(parse("2020-06-30"))
         .startAssetValueExcl(new BigDecimal("100000"))
@@ -40,21 +41,20 @@ BigDecimal twrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
         .annualization(DO_NOT_ANNUALIZE)
         .build());
 assertEquals("0.196053", twrReturn.toPlainString());
-
 ````
 
-**Modified Dietz** is a simplified version of the **Money Weighted Return (MWR)** calculation. 
+#### Modified Dietz Money-Weighted Rate of Return Calculator
+
+_Modified Dietz_ is a simplified version of the _Money-Weighted Return (MWR)_ calculation. 
 It adjusts for the timing and size of cash flows to provide a performance 
-measure that accounts for external influences like deposits and withdrawals. 
-This method is widely used for its ease of computation and accuracy 
-in approximating the performance of investment portfolios over time.
+measure that accounts for external influences like deposits and withdrawals.
 It is one of the methodologies of calculating returns recommended 
-by the Investment Performance Council (IPC) as part of their Global Investment Performance Standards (GIPS).
+by the _Investment Performance Council (IPC)_ as part of their _Global Investment Performance Standards (GIPS)_.
 
 ````
-PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-BigDecimal mwrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-        .calcMethod(MODIFIED_DIETZ)
+ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)
+        .modifiedDietzMwrCalculator();
+BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
         .startDateIncl(parse("2020-06-01"))
         .endDateIncl(parse("2020-06-30"))
         .startAssetValueExcl(new BigDecimal("100000"))
@@ -66,9 +66,34 @@ BigDecimal mwrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
         .annualization(DO_NOT_ANNUALIZE)
         .build());
 assertEquals("0.152239", mwrReturn.toPlainString());
-````    
+````
 
-Here are some good resources to learn more about investment performance calculation:  
+#### Linked Modified Dietz Time-Weighted Rate of Return Calculator
+The _Linked Modified Dietz Time-Weighted Rate of Return_ calculation method allows 
+you to approximate the time-weighted rate of return, even when portfolio valuations at cash flow dates are unavailable.
+````
+LinkedModifiedDietzTwrCalculator linkedTwrCalculator = finTracker.get(PerformanceModule.class)
+        .linkedModifiedDietzTwrCalculator();
+BigDecimal twrReturn = linkedTwrCalculator.calculateReturn(PerfCalcRequest.builder()
+        .startDateIncl(parse("2021-01-01"))
+        .endDateIncl(parse("2021-03-31"))
+        .startAssetValueExcl(new BigDecimal("10000"))
+        .endAssetValueIncl(new BigDecimal("10200"))
+        .flows(List.of(
+                new DateAmount(parse("2021-02-15"), new BigDecimal("100"))))
+        .assetValues(List.of(
+                new DateAmount(parse("2021-01-31"), new BigDecimal("10100")),
+                new DateAmount(parse("2021-02-28"), new BigDecimal("10201"))
+        ))
+        .flowTiming(BEGINNING_OF_DAY)
+        .resultScale(10)
+        .annualization(DO_NOT_ANNUALIZE)
+        .build());
+assertEquals("0.0100004877", twrReturn.toPlainString());
+````
+
+#### Resources for learning more about Investment Performance Calculation
+
 https://canadianportfoliomanagerblog.com/calculating-your-modified-dietz-rate-of-return  
 https://en.wikipedia.org/wiki/Modified_Dietz_method  
 https://en.wikipedia.org/wiki/Time-weighted_return  

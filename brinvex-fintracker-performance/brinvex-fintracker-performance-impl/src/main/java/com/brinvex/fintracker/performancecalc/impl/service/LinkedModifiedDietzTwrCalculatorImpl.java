@@ -1,37 +1,51 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
-import com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
-import com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
-import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeGrowthFactor;
 import static com.brinvex.util.java.DateUtil.minDate;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
 @SuppressWarnings("DuplicatedCode")
-public class LinkedTwrCalculator {
+public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl implements PerformanceCalculator.LinkedModifiedDietzTwrCalculator {
 
-    public static BigDecimal calculateLinkedTwrReturn(
-            RateOfReturnCalcMethod subPeriodCalcMethod,
+    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator;
+
+    public LinkedModifiedDietzTwrCalculatorImpl(ModifiedDietzMwrCalculator modifiedDietzMwrCalculator) {
+        this.modifiedDietzMwrCalculator = modifiedDietzMwrCalculator;
+    }
+
+    @Override
+    protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
+        return calculateLinkedTwrCumulReturn(
+                modifiedDietzMwrCalculator::calculateReturn,
+                calcReq.startDateIncl(),
+                calcReq.endDateIncl(),
+                calcReq.assetValues(),
+                calcReq.flows(),
+                calcReq.flowTiming(),
+                calcReq.calcScale(),
+                calcReq.roundingMode());
+    }
+
+    private static BigDecimal calculateLinkedTwrCumulReturn(
             Function<PerfCalcRequest, BigDecimal> subPeriodReturnCalculator,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
             SortedMap<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -54,7 +68,6 @@ public class LinkedTwrCalculator {
             SortedMap<LocalDate, BigDecimal> subPeriodAssetValues = assetValues.subMap(subPeriodStartDateExcl, subPeriodEndDateExcl);
 
             BigDecimal subPeriodFactor = ONE.add(subPeriodReturnCalculator.apply(PerfCalcRequest.builder()
-                    .calcMethod(subPeriodCalcMethod)
                     .startDateIncl(subPeriodStartDateIncl)
                     .endDateIncl(subPeriodEndDateIncl)
                     .startAssetValueExcl(subPeriodStartValueExcl)
@@ -64,6 +77,7 @@ public class LinkedTwrCalculator {
                     .flowTiming(flowTiming)
                     .annualization(DO_NOT_ANNUALIZE)
                     .calcScale(calcScale)
+                    .resultScale(calcScale)
                     .roundingMode(roundingMode)
                     .build()));
 
@@ -80,6 +94,6 @@ public class LinkedTwrCalculator {
 
             subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
         }
-        return annualizeGrowthFactor(annualization, cumulTwrFactor, startDateIncl, endDateIncl).subtract(ONE);
+        return cumulTwrFactor.subtract(ONE);
     }
 }

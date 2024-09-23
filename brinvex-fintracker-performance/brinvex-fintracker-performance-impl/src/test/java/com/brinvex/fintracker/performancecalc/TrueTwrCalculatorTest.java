@@ -6,8 +6,7 @@ import com.brinvex.fintracker.performancecalc.api.PerformanceModule;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest.PerfCalcRequestBuilder;
-import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
-import com.brinvex.fintracker.performancecalc.impl.service.PerformanceCalculatorImpl;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TrueTwrCalculator;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -15,20 +14,20 @@ import java.util.List;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
-import static com.brinvex.fintracker.performancecalc.api.model.RateOfReturnCalcMethod.TwrCalcMethod.TRUE_TWR;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TrueTwrCalculatorTest {
 
-    private final PerformanceCalculator perfCalculator = new PerformanceCalculatorImpl();
+    private final FinTracker finTracker = FinTracker.newInstance();
+
+    private final TrueTwrCalculator trueTwrCalculator = finTracker.get(PerformanceModule.class).trueTwrCalculator();
 
     @Test
     void twr_readmeExample() {
-        FinTracker finTracker = FinTracker.newInstance();
-        PerformanceCalculator perfCalculator = finTracker.get(PerformanceModule.class).performanceCalculator();
-        BigDecimal twrReturn = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                .calcMethod(TRUE_TWR)
+        TrueTwrCalculator twrCalculator = finTracker.get(PerformanceModule.class)
+                .trueTwrCalculator();
+        BigDecimal twrReturn = twrCalculator.calculateReturn(PerfCalcRequest.builder()
                 .startDateIncl(parse("2020-06-01"))
                 .endDateIncl(parse("2020-06-30"))
                 .startAssetValueExcl(new BigDecimal("100000"))
@@ -47,8 +46,7 @@ class TrueTwrCalculatorTest {
 
     @Test
     void twr1() {
-        BigDecimal ret1 = perfCalculator.calculateReturn(PerfCalcRequest.builder()
-                .calcMethod(TRUE_TWR)
+        BigDecimal ret1 = trueTwrCalculator.calculateReturn(PerfCalcRequest.builder()
                 .startDateIncl(parse("2023-01-22"))
                 .endDateIncl(parse("2023-01-23"))
                 .startAssetValueExcl(new BigDecimal("1000.00"))
@@ -62,7 +60,6 @@ class TrueTwrCalculatorTest {
     @Test
     void twr2() {
         PerfCalcRequestBuilder calcReqBuilder = PerfCalcRequest.builder()
-                .calcMethod(TRUE_TWR)
                 .startDateIncl(parse("2023-01-01"))
                 .endDateIncl(parse("2024-12-31"))
                 .startAssetValueExcl(new BigDecimal("1000.00"))
@@ -70,14 +67,14 @@ class TrueTwrCalculatorTest {
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualization(DO_NOT_ANNUALIZE);
 
-        assertEquals("1.000000", perfCalculator.calculateReturn(calcReqBuilder.copy().build()).toPlainString());
+        assertEquals("1.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy().build()).toPlainString());
 
-        assertEquals("1.000000", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("1.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(FlowTiming.END_OF_DAY)
                         .build())
                 .toPlainString());
 
-        assertEquals("0.000000", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("0.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(BEGINNING_OF_DAY)
                         .assetValues(List.of(
                                 new DateAmount(parse("2023-12-31"), new BigDecimal("1000"))))
@@ -86,7 +83,7 @@ class TrueTwrCalculatorTest {
                         .build())
                 .toPlainString());
 
-        assertEquals("0.000000", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("0.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(FlowTiming.END_OF_DAY)
                         .assetValues(List.of(
                                 new DateAmount(parse("2024-12-31"), new BigDecimal("2000"))))
@@ -95,7 +92,7 @@ class TrueTwrCalculatorTest {
                         .build())
                 .toPlainString());
 
-        assertEquals("1.000000", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("1.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(BEGINNING_OF_DAY)
                         .assetValues(List.of(
                                 new DateAmount(parse("2023-12-31"), new BigDecimal("1000"))))
@@ -104,7 +101,7 @@ class TrueTwrCalculatorTest {
                         .build())
                 .toPlainString());
 
-        assertEquals("1.000000", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("1.000000", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(BEGINNING_OF_DAY)
                         .assetValues(List.of(
                                 new DateAmount(parse("2023-12-31"), new BigDecimal("4000"))))
@@ -113,7 +110,7 @@ class TrueTwrCalculatorTest {
                         .build())
                 .toPlainString());
 
-        assertEquals("0.999995", perfCalculator.calculateReturn(calcReqBuilder.copy()
+        assertEquals("0.999995", trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                         .flowTiming(BEGINNING_OF_DAY)
                         .assetValues(List.of(
                                 new DateAmount(parse("2023-12-31"), new BigDecimal("4000"))))
@@ -122,7 +119,7 @@ class TrueTwrCalculatorTest {
                         .build())
                 .toPlainString());
 
-        BigDecimal ret8 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret8 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .assetValues(List.of(
                         new DateAmount(parse("2023-12-31"), new BigDecimal("4000"))))
@@ -131,7 +128,7 @@ class TrueTwrCalculatorTest {
                 .build());
         assertEquals("0.333333", ret8.toPlainString());
 
-        BigDecimal ret9 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret9 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .assetValues(List.of(
                         new DateAmount(parse("2023-12-31"), new BigDecimal("4000.01"))))
@@ -141,7 +138,7 @@ class TrueTwrCalculatorTest {
         assertEquals("0.333334", ret9.toPlainString());
         assertEquals(1, ret9.compareTo(ret8));
 
-        BigDecimal ret10 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret10 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .assetValues(List.of(
                         new DateAmount(parse("2023-12-31"), new BigDecimal("3999.99"))))
@@ -151,7 +148,7 @@ class TrueTwrCalculatorTest {
         assertEquals("0.333332", ret10.toPlainString());
         assertEquals(-1, ret10.compareTo(ret8));
 
-        BigDecimal ret11 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret11 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .startAssetValueExcl(BigDecimal.ZERO)
                 .endAssetValueIncl(new BigDecimal("2000"))
@@ -162,7 +159,7 @@ class TrueTwrCalculatorTest {
                 .build());
         assertEquals("1.000000", ret11.toPlainString());
 
-        BigDecimal ret12 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret12 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .startAssetValueExcl(BigDecimal.ZERO)
                 .endAssetValueIncl(new BigDecimal("2000"))
@@ -173,7 +170,7 @@ class TrueTwrCalculatorTest {
                 .build());
         assertEquals("1.000000", ret12.toPlainString());
 
-        BigDecimal ret13 = perfCalculator.calculateReturn(calcReqBuilder.copy()
+        BigDecimal ret13 = trueTwrCalculator.calculateReturn(calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .flowTiming(FlowTiming.END_OF_DAY)
                 .startAssetValueExcl(new BigDecimal("1000"))
@@ -193,7 +190,6 @@ class TrueTwrCalculatorTest {
     @Test
     void twr_Wikipedia1() {
         PerfCalcRequest twrReq1 = PerfCalcRequest.builder()
-                .calcMethod(TRUE_TWR)
                 .startDateIncl(parse("2023-01-01"))
                 .endDateIncl(parse("2024-12-31"))
                 .startAssetValueExcl(new BigDecimal("500.00"))
@@ -206,7 +202,7 @@ class TrueTwrCalculatorTest {
                 .annualization(DO_NOT_ANNUALIZE)
                 .resultScale(2)
                 .build();
-        assertEquals("0.50", perfCalculator.calculateReturn(twrReq1).toPlainString());
+        assertEquals("0.50", trueTwrCalculator.calculateReturn(twrReq1).toPlainString());
     }
 
 }

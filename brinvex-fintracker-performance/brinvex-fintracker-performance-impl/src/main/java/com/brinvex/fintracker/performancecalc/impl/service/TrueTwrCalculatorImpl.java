@@ -1,7 +1,8 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
-import com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
+import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -12,20 +13,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeGrowthFactor;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
 @SuppressWarnings("DuplicatedCode")
-public class TrueTwrCalculator {
+public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements PerformanceCalculator.TrueTwrCalculator {
 
-    public static BigDecimal calculateTrueTwrReturn(
+    @Override
+    protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
+        return calculateTrueTwrCumulReturn(
+                calcReq.startDateIncl(),
+                calcReq.endDateIncl(),
+                calcReq.assetValues(),
+                calcReq.flows(),
+                calcReq.flowTiming(),
+                calcReq.calcScale(),
+                calcReq.roundingMode()
+        );
+    }
+
+    private static BigDecimal calculateTrueTwrCumulReturn(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
             Map<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
-            AnnualizationOption annualization,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -48,8 +60,7 @@ public class TrueTwrCalculator {
                     roundingMode
             );
         };
-        BigDecimal annFactor = annualizeGrowthFactor(annualization, cumulFactor, startDateIncl, endDateIncl);
-        return annFactor.subtract(ONE);
+        return cumulFactor.subtract(ONE);
     }
 
     private static BigDecimal calculateCumulTwrFactorWithFlowsAtBeginningOfDay(

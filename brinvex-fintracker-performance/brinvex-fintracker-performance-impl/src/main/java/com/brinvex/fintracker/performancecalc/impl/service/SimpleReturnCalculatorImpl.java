@@ -1,22 +1,28 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
-import com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption;
+import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
-public class SimpleReturnCalculator {
+public class SimpleReturnCalculatorImpl extends BaseCalculatorImpl implements PerformanceCalculator.SimpleReturnCalculator {
 
-    public static BigDecimal calculateSimpleReturn(
+    @Override
+    protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
+        return calculateSimpleCumulReturn(
+                calcReq.startAssetValueExcl(),
+                calcReq.endAssetValueIncl(),
+                calcReq.calcScale(),
+                calcReq.roundingMode());
+    }
+
+    protected static BigDecimal calculateSimpleCumulReturn(
             BigDecimal startAssetValueExcl,
             BigDecimal endAssetValueIncl,
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
-            AnnualizationOption annualizationOption,
             int calcScale,
             RoundingMode roundingMode
     ) {
@@ -34,6 +40,6 @@ public class SimpleReturnCalculator {
             cumulReturn = endAssetValueIncl.subtract(startAssetValueExcl).divide(startAssetValueExcl, calcScale, roundingMode);
         }
 
-        return AnnualizationUtil.annualizeReturn(annualizationOption, cumulReturn, startDateIncl, endDateIncl);
+        return cumulReturn;
     }
 }

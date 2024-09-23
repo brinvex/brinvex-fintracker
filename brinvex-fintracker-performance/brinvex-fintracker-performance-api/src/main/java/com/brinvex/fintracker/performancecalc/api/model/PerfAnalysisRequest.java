@@ -2,6 +2,9 @@ package com.brinvex.fintracker.performancecalc.api.model;
 
 import com.brinvex.fintracker.core.api.model.general.DateAmount;
 import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.MwrCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TwrCalculator;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -16,8 +19,8 @@ public record PerfAnalysisRequest(
         Collection<DateAmount> cashFlows,
         Collection<DateAmount> assetValues,
         FlowTiming flowTiming,
-        RateOfReturnCalcMethod.TwrCalcMethod twrCalcMethod,
-        RateOfReturnCalcMethod.MwrCalcMethod mwrCalcMethod
+        Class<? extends TwrCalculator> twrCalculatorType,
+        Class<? extends MwrCalculator> mwrCalculatorType
 ) {
 
     @Builder(toBuilder = true)
@@ -41,11 +44,11 @@ public record PerfAnalysisRequest(
         if (assetValues == null) {
             assetValues = emptyList();
         }
-        if (twrCalcMethod == null) {
-            twrCalcMethod = RateOfReturnCalcMethod.TwrCalcMethod.TRUE_TWR;
+        if (twrCalculatorType == null) {
+            twrCalculatorType = PerformanceCalculator.TrueTwrCalculator.class;
         }
-        if (mwrCalcMethod == null) {
-            mwrCalcMethod = RateOfReturnCalcMethod.MwrCalcMethod.MODIFIED_DIETZ;
+        if (mwrCalculatorType == null) {
+            mwrCalculatorType = PerformanceCalculator.ModifiedDietzMwrCalculator.class;
         }
         if (flowTiming == null) {
             flowTiming = FlowTiming.BEGINNING_OF_DAY;
