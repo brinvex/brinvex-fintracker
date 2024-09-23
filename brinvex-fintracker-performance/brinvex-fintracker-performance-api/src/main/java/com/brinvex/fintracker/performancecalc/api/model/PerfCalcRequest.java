@@ -234,6 +234,7 @@ public final class PerfCalcRequest {
                     LocalDate date = e.getKey();
                     return !date.isBefore(startDateIncl) && !date.isAfter(endDateIncl);
                 })
+                .filter(e -> e.getValue().compareTo(ZERO) != 0)
                 .collect(toMap(Entry::getKey, Entry::getValue, BigDecimal::add, TreeMap::new)));
     }
 
