@@ -21,7 +21,9 @@ class TrueTwrCalculatorTest {
 
     private final FinTracker finTracker = FinTracker.newInstance();
 
-    private final TrueTwrCalculator trueTwrCalculator = finTracker.get(PerformanceModule.class).trueTwrCalculator();
+    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
+
+    private final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
 
     @Test
     void twr_readmeExample() {

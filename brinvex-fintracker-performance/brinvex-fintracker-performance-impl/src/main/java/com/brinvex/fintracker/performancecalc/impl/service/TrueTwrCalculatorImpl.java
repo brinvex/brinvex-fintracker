@@ -8,10 +8,9 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.SequencedMap;
+import java.util.Map.Entry;
+import java.util.SortedMap;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -24,6 +23,8 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
         return calculateTrueTwrCumulReturn(
                 calcReq.startDateIncl(),
                 calcReq.endDateIncl(),
+                calcReq.startAssetValueExcl(),
+                calcReq.endAssetValueIncl(),
                 calcReq.assetValues(),
                 calcReq.flows(),
                 calcReq.flowTiming(),
@@ -35,8 +36,10 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
     private static BigDecimal calculateTrueTwrCumulReturn(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
+            BigDecimal startAssetValueExcl,
+            BigDecimal endAssetValueIncl,
             Map<LocalDate, BigDecimal> assetValues,
-            SequencedMap<LocalDate, BigDecimal> flows,
+            SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
@@ -46,16 +49,20 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             case BEGINNING_OF_DAY -> calculateCumulTwrFactorWithFlowsAtBeginningOfDay(
                     startDateIncl,
                     endDateIncl,
-                    flows,
+                    startAssetValueExcl,
+                    endAssetValueIncl,
                     assetValues,
+                    flows,
                     calcScale,
                     roundingMode
             );
             case END_OF_DAY -> calculateCumulTwrFactorWithFlowsAtEndOfDay(
                     startDateIncl,
                     endDateIncl,
-                    flows,
+                    startAssetValueExcl,
+                    endAssetValueIncl,
                     assetValues,
+                    flows,
                     calcScale,
                     roundingMode
             );
@@ -66,34 +73,52 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
     private static BigDecimal calculateCumulTwrFactorWithFlowsAtBeginningOfDay(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SequencedMap<LocalDate, BigDecimal> cashFlows,
+            BigDecimal startAssetValueExcl,
+            BigDecimal endAssetValueIncl,
             Map<LocalDate, BigDecimal> assetValues,
+            SortedMap<LocalDate, BigDecimal> flows,
             int calcScale,
             RoundingMode roundingMode
     ) {
-        List<LocalDate> subPeriodDates = new ArrayList<>();
-        subPeriodDates.add(startDateIncl);
-        subPeriodDates.addAll(cashFlows.keySet().stream()
-                .dropWhile(d -> !d.isAfter(startDateIncl))
-                .takeWhile(d -> !d.isAfter(endDateIncl))
-                .toList());
-        subPeriodDates.add(endDateIncl.plusDays(1));
+
+        {
+            Entry<LocalDate, BigDecimal> firstFlowEntry = flows.firstEntry();
+            if (firstFlowEntry != null && firstFlowEntry.getKey().isEqual(startDateIncl)) {
+                startAssetValueExcl = startAssetValueExcl.add(firstFlowEntry.getValue());
+                flows = flows.tailMap(startDateIncl.plusDays(1));
+            }
+        }
 
         BigDecimal cumulGrowthFactor = ONE;
-        for (int i = 1, subPeriodDatesSize = subPeriodDates.size(); i < subPeriodDatesSize; i++) {
-            LocalDate subPeriodStartDateIncl = subPeriodDates.get(i - 1);
+
+        LocalDate subPeriodStartDateIncl = startDateIncl;
+        BigDecimal flow = ZERO;
+        for (int i = 1, periodCount = flows.size() + 1; i <= periodCount; i++) {
+
             LocalDate subPeriodStartDateExcl = subPeriodStartDateIncl.minusDays(1);
-            LocalDate subPeriodEndDateIncl = subPeriodDates.get(i).minusDays(1);
+            LocalDate subPeriodEndDateIncl;
+            BigDecimal subPeriodStartValue;
+            BigDecimal subPeriodEndValue;
+            if (i == 1) {
+                subPeriodStartValue = startAssetValueExcl;
+            } else {
+                subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
 
-            BigDecimal subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
-            BigDecimal subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
-            Validate.notNull(subPeriodStartValue,
-                    () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
-            Validate.notNull(subPeriodEndValue,
-                    () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
-            BigDecimal flow = cashFlows.getOrDefault(subPeriodStartDateIncl, ZERO);
+                Validate.notNull(subPeriodStartValue,
+                        () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
+            }
+            if (i == periodCount) {
+                subPeriodEndDateIncl = endDateIncl;
+                subPeriodEndValue = endAssetValueIncl;
+            } else {
+                subPeriodEndDateIncl = flows.firstKey().minusDays(1);
+                subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
+
+                Validate.notNull(subPeriodEndValue,
+                        () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
+            }
+
             BigDecimal subPeriodStartValueWithFlow = subPeriodStartValue.add(flow);
-
             BigDecimal periodFactor;
             if (subPeriodStartValueWithFlow.compareTo(ZERO) == 0) {
                 if (subPeriodEndValue.compareTo(ZERO) == 0) {
@@ -116,6 +141,15 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
                 }
             }
             cumulGrowthFactor = cumulGrowthFactor.multiply(periodFactor).setScale(calcScale, roundingMode);
+
+            // Variable values for the next iteration
+            {
+                subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
+                if (i < periodCount) {
+                    flow = flows.firstEntry().getValue();
+                    flows = flows.tailMap(subPeriodStartDateIncl.plusDays(1));
+                }
+            }
         }
 
         return cumulGrowthFactor;
@@ -124,29 +158,54 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
     private static BigDecimal calculateCumulTwrFactorWithFlowsAtEndOfDay(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SequencedMap<LocalDate, BigDecimal> cashFlows,
+            BigDecimal startAssetValueExcl,
+            BigDecimal endAssetValueIncl,
             Map<LocalDate, BigDecimal> assetValues,
+            SortedMap<LocalDate, BigDecimal> flows,
             int calcScale,
             RoundingMode roundingMode
     ) {
-        List<LocalDate> subPeriodDates = new ArrayList<>();
-        subPeriodDates.add(startDateIncl.minusDays(1));
-        subPeriodDates.addAll(cashFlows.keySet().stream().dropWhile(d -> d.isBefore(startDateIncl)).takeWhile(d -> d.isBefore(endDateIncl)).toList());
-        subPeriodDates.add(endDateIncl);
+
+        {
+            Entry<LocalDate, BigDecimal> lastFlowEntry = flows.lastEntry();
+            if (lastFlowEntry != null && lastFlowEntry.getKey().isEqual(endDateIncl)) {
+                endAssetValueIncl = endAssetValueIncl.subtract(lastFlowEntry.getValue());
+                flows = flows.headMap(endDateIncl);
+            }
+        }
 
         BigDecimal cumulGrowthFactor = ONE;
-        for (int i = 1, subPeriodDatesSize = subPeriodDates.size(); i < subPeriodDatesSize; i++) {
-            LocalDate subPeriodStartDateExcl = subPeriodDates.get(i - 1);
-            LocalDate subPeriodEndDateIncl = subPeriodDates.get(i);
 
-            BigDecimal subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
-            BigDecimal subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
-            Validate.notNull(subPeriodStartValue,
-                    () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
-            Validate.notNull(subPeriodEndValue,
-                    () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
+        LocalDate subPeriodStartDateIncl = startDateIncl;
+        for (int i = 1, periodCount = flows.size() + 1; i <= periodCount; i++) {
 
-            BigDecimal flow = cashFlows.getOrDefault(subPeriodEndDateIncl, ZERO);
+            LocalDate subPeriodStartDateExcl = subPeriodStartDateIncl.minusDays(1);
+            LocalDate subPeriodEndDateIncl;
+            BigDecimal subPeriodStartValue;
+            BigDecimal subPeriodEndValue;
+            BigDecimal flow;
+            if (i == 1) {
+                subPeriodStartValue = startAssetValueExcl;
+            } else {
+                subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
+
+                Validate.notNull(subPeriodStartValue,
+                        () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
+            }
+            if (i == periodCount) {
+                flow = ZERO;
+                subPeriodEndDateIncl = endDateIncl;
+                subPeriodEndValue = endAssetValueIncl;
+            } else {
+                Entry<LocalDate, BigDecimal> flowEntry = flows.firstEntry();
+                flow = flowEntry.getValue();
+                subPeriodEndDateIncl = flowEntry.getKey();
+                subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
+
+                Validate.notNull(subPeriodEndValue,
+                        () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
+            }
+
             BigDecimal subPeriodEndValueWithoutFlow = subPeriodEndValue.subtract(flow);
 
             BigDecimal periodFactor;
@@ -171,6 +230,14 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
                 }
             }
             cumulGrowthFactor = cumulGrowthFactor.multiply(periodFactor).setScale(calcScale, roundingMode);
+
+            // Variable values for the next iteration
+            {
+                subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
+                if (i < periodCount) {
+                    flows = flows.tailMap(subPeriodStartDateIncl.plusDays(1));
+                }
+            }
         }
 
         return cumulGrowthFactor;

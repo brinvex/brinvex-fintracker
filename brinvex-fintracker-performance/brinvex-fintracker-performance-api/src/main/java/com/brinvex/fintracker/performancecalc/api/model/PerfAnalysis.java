@@ -10,9 +10,9 @@ import java.time.LocalDate;
  *
  * @param periodStartDateIncl The start date of the period, inclusive
  * @param periodEndDateIncl   The end date of the period, inclusive
- * @param startAssetValueExcl The value of the asset at the start of the period, exclusive of any flows
- * @param endAssetValueIncl   The value of the asset at the end of the period, inclusive of any flows
- * @param flow                The total cash flow during the period (e.g., deposits or withdrawals)
+ * @param periodStartAssetValueExcl The value of the asset at the start of the period, exclusive of any flows
+ * @param periodEndAssetValueIncl   The value of the asset at the end of the period, inclusive of any flows
+ * @param flowSum                The total cash flowSum during the period (e.g., deposits or withdrawals)
  * @param periodTwr           Non-Annualized Time-Weighted Return for this sub-period
  * @param cumulativeTwr       Cumulative Time-Weighted Return up to and including this sub-period
  * @param annualizedTwr       Annualized Time-Weighted Return up to and including this sub-period
@@ -24,9 +24,9 @@ import java.time.LocalDate;
 public record PerfAnalysis(
         LocalDate periodStartDateIncl,
         LocalDate periodEndDateIncl,
-        BigDecimal startAssetValueExcl,
-        BigDecimal endAssetValueIncl,
-        BigDecimal flow,
+        BigDecimal periodStartAssetValueExcl,
+        BigDecimal periodEndAssetValueIncl,
+        BigDecimal flowSum,
         BigDecimal periodTwr,
         BigDecimal cumulativeTwr,
         BigDecimal annualizedTwr,

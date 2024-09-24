@@ -30,7 +30,9 @@ class ModifiedDietzMwrCalculatorTest {
 
     private final FinTracker finTracker = FinTracker.newInstance();
 
-    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = finTracker.get(PerformanceModule.class).modifiedDietzMwrCalculator();
+    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
+
+    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
 
     @Test
     void dietz_readmeExample() {

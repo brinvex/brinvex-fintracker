@@ -11,16 +11,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SequencedMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableSequencedMap;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.reducing;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSortedMap;
 import static java.util.stream.Collectors.toMap;
 
 @Getter
@@ -30,8 +28,8 @@ public final class PerfCalcRequest {
     private final LocalDate endDateIncl;
     private final BigDecimal startAssetValueExcl;
     private final BigDecimal endAssetValueIncl;
-    private final SequencedMap<LocalDate, BigDecimal> assetValues;
-    private final SequencedMap<LocalDate, BigDecimal> flows;
+    private final Map<LocalDate, BigDecimal> assetValues;
+    private final SortedMap<LocalDate, BigDecimal> flows;
     private final FlowTiming flowTiming;
     private final AnnualizationOption annualization;
     private final int calcScale;
@@ -43,8 +41,10 @@ public final class PerfCalcRequest {
             LocalDate endDateIncl,
             BigDecimal startAssetValueExcl,
             BigDecimal endAssetValueIncl,
-            Collection<Entry<LocalDate, BigDecimal>> assetValues,
-            Collection<Entry<LocalDate, BigDecimal>> flows,
+            Map<LocalDate, BigDecimal> assetValuesMap,
+            Collection<DateAmount> assetValuesCollection,
+            Map<LocalDate, BigDecimal> flowsMap,
+            Collection<DateAmount> flowsCollection,
             FlowTiming flowTiming,
             AnnualizationOption annualization,
             Integer calcScale,
@@ -83,9 +83,21 @@ public final class PerfCalcRequest {
         this.resultScale = resultScale == null ? 6 : resultScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
 
-        this.assetValues = sanitizeAssetValues(assetValues, startDateIncl, endDateIncl, startAssetValueExcl, endAssetValueIncl);
-        this.flows = sanitizeFlows(flows, startDateIncl, endDateIncl);
+        this.assetValues = unmodifiableMap(sanitizeAssetValues(
+                assetValuesMap,
+                assetValuesCollection,
+                startDateIncl,
+                endDateIncl
+        ));
+
+        this.flows = unmodifiableSortedMap(sanitizeFlows(
+                flowsMap,
+                flowsCollection,
+                startDateIncl,
+                endDateIncl
+        ));
     }
+
 
     public static PerfCalcRequestBuilder builder() {
         return new PerfCalcRequestBuilder();
@@ -94,14 +106,19 @@ public final class PerfCalcRequest {
     @Setter
     @Accessors(fluent = true, chain = true)
     public static class PerfCalcRequestBuilder {
+
         private LocalDate startDateIncl;
         private LocalDate endDateIncl;
         private BigDecimal startAssetValueExcl;
         private BigDecimal endAssetValueIncl;
         @Setter(AccessLevel.NONE)
-        private Collection<Entry<LocalDate, BigDecimal>> assetValues;
+        private Map<LocalDate, BigDecimal> assetValuesMap;
         @Setter(AccessLevel.NONE)
-        private Collection<Entry<LocalDate, BigDecimal>> flows;
+        private Collection<DateAmount> assetValuesCollection;
+        @Setter(AccessLevel.NONE)
+        private Map<LocalDate, BigDecimal> flowsMap;
+        @Setter(AccessLevel.NONE)
+        private Collection<DateAmount> flowsCollection;
         private FlowTiming flowTiming;
         private AnnualizationOption annualization;
         Integer calcScale;
@@ -112,139 +129,127 @@ public final class PerfCalcRequest {
         }
 
         @Tolerate
-        public PerfCalcRequestBuilder assetValues(Collection<DateAmount> assetValues) {
-            this.assetValues = assetValues == null ? null : assetValues.stream().map(e -> Map.entry(e.date(), e.amount())).toList();
-            return this;
-        }
-
-        @Tolerate
         public PerfCalcRequestBuilder assetValues(Map<LocalDate, BigDecimal> assetValues) {
-            this.assetValues = assetValues == null ? null : assetValues.entrySet();
+            this.assetValuesCollection = null;
+            this.assetValuesMap = assetValues;
             return this;
         }
 
         @Tolerate
-        public PerfCalcRequestBuilder flows(Collection<DateAmount> flows) {
-            this.flows = flows == null ? null : flows.stream().map(e -> Map.entry(e.date(), e.amount())).toList();
+        public PerfCalcRequestBuilder assetValues(Collection<DateAmount> assetValues) {
+            this.assetValuesMap = null;
+            this.assetValuesCollection = assetValues;
             return this;
         }
 
         @Tolerate
         public PerfCalcRequestBuilder flows(Map<LocalDate, BigDecimal> flows) {
-            this.flows = flows == null ? null : flows.entrySet();
+            this.flowsCollection = null;
+            this.flowsMap = flows;
+            return this;
+        }
+
+        @Tolerate
+        public PerfCalcRequestBuilder flows(Collection<DateAmount> flows) {
+            this.flowsMap = null;
+            this.flowsCollection = flows;
             return this;
         }
 
         public PerfCalcRequest build() {
             return new PerfCalcRequest(
-                    this.startDateIncl,
-                    this.endDateIncl,
-                    this.startAssetValueExcl,
-                    this.endAssetValueIncl,
-                    this.assetValues,
-                    this.flows,
-                    this.flowTiming,
-                    this.annualization,
-                    this.calcScale,
-                    this.resultScale,
-                    this.roundingMode
+                    startDateIncl,
+                    endDateIncl,
+                    startAssetValueExcl,
+                    endAssetValueIncl,
+                    assetValuesMap,
+                    assetValuesCollection,
+                    flowsMap,
+                    flowsCollection,
+                    flowTiming,
+                    annualization,
+                    calcScale,
+                    resultScale,
+                    roundingMode
             );
         }
 
         public PerfCalcRequestBuilder copy() {
-            return new PerfCalcRequestBuilder()
-                    .startDateIncl(startDateIncl)
-                    .endDateIncl(endDateIncl)
-                    .startAssetValueExcl(startAssetValueExcl)
-                    .endAssetValueIncl(endAssetValueIncl)
-                    .assetValues(assetValues == null ? null : assetValues.stream().collect(toMap(Entry::getKey, Entry::getValue)))
-                    .flows(flows == null ? null : flows.stream().collect(toMap(Entry::getKey, Entry::getValue)))
-                    .flowTiming(flowTiming)
-                    .annualization(annualization)
-                    .calcScale(calcScale)
-                    .resultScale(resultScale);
+            PerfCalcRequestBuilder copy = new PerfCalcRequestBuilder();
+            copy.startDateIncl = startDateIncl;
+            copy.endDateIncl = endDateIncl;
+            copy.startAssetValueExcl = startAssetValueExcl;
+            copy.endAssetValueIncl = endAssetValueIncl;
+            copy.flowTiming = flowTiming;
+            copy.annualization = annualization;
+            copy.calcScale = calcScale;
+            copy.resultScale = resultScale;
+            copy.assetValuesMap = assetValuesMap;
+            copy.assetValuesCollection = assetValuesCollection;
+            copy.flowsMap = flowsMap;
+            copy.flowsCollection = flowsCollection;
+            return copy;
         }
     }
 
-    private static SequencedMap<LocalDate, BigDecimal> sanitizeAssetValues(
-            Collection<Entry<LocalDate, BigDecimal>> assetValues,
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
-            BigDecimal startAssetValueExcl,
-            BigDecimal endAssetValueIncl
-    ) {
-        if (assetValues == null) {
-            assetValues = emptySet();
-        }
-
-        LocalDate startDateExcl = startDateIncl.minusDays(1);
-        LinkedHashMap<LocalDate, BigDecimal> sanitizedAssetValues = new LinkedHashMap<>();
-        assetValues
-                .stream()
-                .dropWhile(e -> e.getKey().isBefore(startDateExcl))
-                .takeWhile(e -> !e.getKey().isAfter(endDateIncl))
-                .sorted(Entry.comparingByKey())
-                .forEach(e -> {
-                    LocalDate date = e.getKey();
-                    BigDecimal value = e.getValue();
-                    BigDecimal oldValue = sanitizedAssetValues.put(date, value);
-                    if (oldValue != null) {
-                        throw new IllegalArgumentException((
-                                "The assetValues collection must not contain more than one entry for the same date; " +
-                                "given: %s, %s, %s")
-                                .formatted(date, oldValue, value));
+    static Map<LocalDate, BigDecimal> sanitizeAssetValues(Map<LocalDate, BigDecimal> assetValuesMap, Collection<DateAmount> assetValuesCollection, LocalDate startDateIncl, LocalDate endDateIncl) {
+        Map<LocalDate, BigDecimal> sanitizedAssetValues;
+        if (assetValuesMap instanceof HashMap) {
+            sanitizedAssetValues = assetValuesMap;
+        } else {
+            sanitizedAssetValues = new HashMap<>();
+            if (assetValuesMap != null) {
+                sanitizedAssetValues.putAll(assetValuesMap);
+            } else if (assetValuesCollection != null) {
+                LocalDate startDateExcl = startDateIncl.minusDays(1);
+                for (DateAmount dateAssetValue : assetValuesCollection) {
+                    LocalDate date = dateAssetValue.date();
+                    BigDecimal assetValue = dateAssetValue.amount();
+                    if (!date.isBefore(startDateExcl) && !date.isAfter(endDateIncl)) {
+                        BigDecimal oldAssetValue = sanitizedAssetValues.put(date, assetValue);
+                        if (oldAssetValue != null && oldAssetValue.compareTo(assetValue) != 0) {
+                            throw new IllegalArgumentException((
+                                    "The assetValues collection must not contain different entries for the same date; " +
+                                    "given: %s, %s, %s")
+                                    .formatted(date, oldAssetValue, assetValue));
+                        }
                     }
-                });
-
-        BigDecimal assetValueForStartDateExcl = sanitizedAssetValues.get(startDateExcl);
-        if (assetValueForStartDateExcl != null) {
-            if (startAssetValueExcl.compareTo(assetValueForStartDateExcl) != 0) {
-                throw new IllegalArgumentException((
-                        "If the assetValues collection contains an entry for startDateExcl, " +
-                        "it must be equal to the given startAssetValueExcl; " +
-                        "given: startDateExcl=%s, assetValueForStartDateExcl=%s, startAssetValueExcl=%s")
-                        .formatted(startDateExcl, assetValueForStartDateExcl, startAssetValueExcl));
+                }
             }
-        } else {
-            sanitizedAssetValues.putFirst(startDateExcl, startAssetValueExcl);
         }
-
-        BigDecimal assetValueForEndDateIncl = sanitizedAssetValues.get(endDateIncl);
-        if (assetValueForEndDateIncl != null) {
-            if (endAssetValueIncl.compareTo(assetValueForEndDateIncl) != 0) {
-                throw new IllegalArgumentException((
-                        "If the assetValues collection contains an entry for endDateIncl, " +
-                        "it must be equal to the given endAssetValueIncl; " +
-                        "given: endDateIncl=%s, assetValueForEndDateIncl=%s, endAssetValueIncl=%s")
-                        .formatted(endDateIncl, assetValueForEndDateIncl, endAssetValueIncl));
-            }
-        } else {
-            sanitizedAssetValues.putLast(endDateIncl, endAssetValueIncl);
-        }
-
-        return unmodifiableSequencedMap(sanitizedAssetValues);
+        return sanitizedAssetValues;
     }
 
-    private static SequencedMap<LocalDate, BigDecimal> sanitizeFlows(
-            Collection<Entry<LocalDate, BigDecimal>> flows,
-            LocalDate startDateIncl,
-            LocalDate endDateIncl
-    ) {
-        if (flows == null) {
-            flows = emptySet();
+    static SortedMap<LocalDate, BigDecimal> sanitizeFlows(Map<LocalDate, BigDecimal> flowsMap, Collection<DateAmount> flowsCollection, LocalDate startDateIncl, LocalDate endDateIncl) {
+        SortedMap<LocalDate, BigDecimal> sanitizedFlows;
+        if (flowsMap != null) {
+            if (flowsMap instanceof SortedMap) {
+                sanitizedFlows = ((SortedMap<LocalDate, BigDecimal>) flowsMap);
+            } else {
+                sanitizedFlows = new TreeMap<>(flowsMap);
+            }
+            if (!sanitizedFlows.isEmpty()) {
+                LocalDate firstKey = sanitizedFlows.firstKey();
+                LocalDate lastKey = sanitizedFlows.lastKey();
+                LocalDate subFirstKey = startDateIncl.isBefore(firstKey) ? firstKey : startDateIncl;
+                LocalDate subLastKey = endDateIncl.isAfter(lastKey) ? lastKey : endDateIncl;
+                if (subFirstKey.isAfter(subLastKey)) {
+                    sanitizedFlows = new TreeMap<>();
+                } else {
+                    sanitizedFlows = sanitizedFlows.subMap(subFirstKey, subLastKey.plusDays(1));
+                }
+            }
+        } else {
+            if (flowsCollection != null) {
+                sanitizedFlows = flowsCollection
+                        .stream()
+                        .filter(dateAmount -> !dateAmount.isBefore(startDateIncl) && !dateAmount.isAfter(endDateIncl))
+                        .collect(toMap(DateAmount::date, DateAmount::amount, BigDecimal::add, TreeMap::new));
+            } else {
+                sanitizedFlows = new TreeMap<>();
+            }
         }
-        return unmodifiableSequencedMap((SequencedMap<LocalDate, ? extends BigDecimal>) flows
-                .stream()
-                .filter(e -> {
-                    LocalDate date = e.getKey();
-                    return !date.isBefore(startDateIncl) && !date.isAfter(endDateIncl);
-                })
-                .collect(groupingBy(Entry::getKey, reducing(ZERO, Entry::getValue, BigDecimal::add)))
-                .entrySet()
-                .stream()
-                .filter(e -> e.getValue().compareTo(ZERO) != 0)
-                .sorted(Entry.comparingByKey())
-                .collect(toMap(Entry::getKey, Entry::getValue, BigDecimal::add, LinkedHashMap::new)));
+        return sanitizedFlows;
     }
 
 }

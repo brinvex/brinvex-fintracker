@@ -9,7 +9,8 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.SequencedMap;
+import java.util.Map;
+import java.util.SortedMap;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
@@ -32,6 +33,8 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
                 modifiedDietzMwrCalculator::calculateReturn,
                 calcReq.startDateIncl(),
                 calcReq.endDateIncl(),
+                calcReq.startAssetValueExcl(),
+                calcReq.endAssetValueIncl(),
                 calcReq.assetValues(),
                 calcReq.flows(),
                 calcReq.flowTiming(),
@@ -43,8 +46,10 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
             Function<PerfCalcRequest, BigDecimal> subPeriodReturnCalculator,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SequencedMap<LocalDate, BigDecimal> assetValues,
-            SequencedMap<LocalDate, BigDecimal> flows,
+            BigDecimal startAssetValueExcl,
+            BigDecimal endAssetValueIncl,
+            Map<LocalDate, BigDecimal> assetValues,
+            SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
@@ -56,12 +61,11 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
         while (!subPeriodStartDateIncl.isAfter(endDateIncl)) {
             LocalDate subPeriodStartDateExcl = subPeriodStartDateIncl.minusDays(1);
             LocalDate subPeriodEndDateIncl = minDate(periodUnit.adjEndDateIncl(subPeriodStartDateIncl), endDateIncl);
-            LocalDate subPeriodEndDateExcl = subPeriodEndDateIncl.plusDays(1);
-            BigDecimal subPeriodStartValueExcl = assetValues.get(subPeriodStartDateExcl);
-            Validate.notNull(subPeriodStartValueExcl, () -> "subPeriodStartValueExcl must not be null, missing asset value for subPeriodStartDateExcl=%s"
+            BigDecimal subPeriodStartValueExcl = subPeriodStartDateIncl == startDateIncl ? startAssetValueExcl : assetValues.get(subPeriodStartDateExcl);
+            Validate.notNull(subPeriodStartValueExcl, () -> "subPeriodStartValueExcl must not be null, missing assetValue for subPeriodStartDateExcl=%s"
                     .formatted(subPeriodStartDateExcl));
-            BigDecimal subPeriodEndValueIncl = assetValues.get(subPeriodEndDateIncl);
-            Validate.notNull(subPeriodEndValueIncl, () -> "subPeriodEndValueIncl must not be null, missing asset value for endDateIncl=%s"
+            BigDecimal subPeriodEndValueIncl = subPeriodEndDateIncl == endDateIncl ? endAssetValueIncl : assetValues.get(subPeriodEndDateIncl);
+            Validate.notNull(subPeriodEndValueIncl, () -> "subPeriodEndValueIncl must not be null, missing assetValue for endDateIncl=%s"
                     .formatted(subPeriodEndDateIncl));
 
             BigDecimal subPeriodFactor = ONE.add(subPeriodReturnCalculator.apply(PerfCalcRequest.builder()

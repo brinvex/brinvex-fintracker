@@ -24,15 +24,17 @@ import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PerformanceCalculatorTest {
+class PerformanceCalculatorTest {
 
     private final FinTracker finTracker = FinTracker.newInstance();
 
-    private final TrueTwrCalculator trueTwrCalculator = finTracker.get(PerformanceModule.class).trueTwrCalculator();
+    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
 
-    private final LinkedModifiedDietzTwrCalculator linkedModifiedDietzTwrCalculator = finTracker.get(PerformanceModule.class).linkedModifiedDietzTwrCalculator();
+    private final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
 
-    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = finTracker.get(PerformanceModule.class).modifiedDietzMwrCalculator();
+    private final LinkedModifiedDietzTwrCalculator linkedModifiedDietzTwrCalculator = perfModule.linkedModifiedDietzTwrCalculator();
+
+    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
 
     @Test
     void perfCalc1() {
