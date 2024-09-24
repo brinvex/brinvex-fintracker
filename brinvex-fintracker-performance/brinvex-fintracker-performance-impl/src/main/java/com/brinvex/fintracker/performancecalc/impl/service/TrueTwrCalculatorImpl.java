@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
+import java.util.SequencedMap;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -36,7 +36,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             LocalDate startDateIncl,
             LocalDate endDateIncl,
             Map<LocalDate, BigDecimal> assetValues,
-            SortedMap<LocalDate, BigDecimal> flows,
+            SequencedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
@@ -66,14 +66,17 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
     private static BigDecimal calculateCumulTwrFactorWithFlowsAtBeginningOfDay(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SortedMap<LocalDate, BigDecimal> cashFlows,
+            SequencedMap<LocalDate, BigDecimal> cashFlows,
             Map<LocalDate, BigDecimal> assetValues,
             int calcScale,
             RoundingMode roundingMode
     ) {
         List<LocalDate> subPeriodDates = new ArrayList<>();
         subPeriodDates.add(startDateIncl);
-        subPeriodDates.addAll(cashFlows.subMap(startDateIncl.plusDays(1), endDateIncl.plusDays(1)).keySet());
+        subPeriodDates.addAll(cashFlows.keySet().stream()
+                .dropWhile(d -> !d.isAfter(startDateIncl))
+                .takeWhile(d -> !d.isAfter(endDateIncl))
+                .toList());
         subPeriodDates.add(endDateIncl.plusDays(1));
 
         BigDecimal cumulGrowthFactor = ONE;
@@ -121,14 +124,14 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
     private static BigDecimal calculateCumulTwrFactorWithFlowsAtEndOfDay(
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SortedMap<LocalDate, BigDecimal> cashFlows,
+            SequencedMap<LocalDate, BigDecimal> cashFlows,
             Map<LocalDate, BigDecimal> assetValues,
             int calcScale,
             RoundingMode roundingMode
     ) {
         List<LocalDate> subPeriodDates = new ArrayList<>();
         subPeriodDates.add(startDateIncl.minusDays(1));
-        subPeriodDates.addAll(cashFlows.subMap(startDateIncl, endDateIncl).keySet());
+        subPeriodDates.addAll(cashFlows.keySet().stream().dropWhile(d -> d.isBefore(startDateIncl)).takeWhile(d -> d.isBefore(endDateIncl)).toList());
         subPeriodDates.add(endDateIncl);
 
         BigDecimal cumulGrowthFactor = ONE;

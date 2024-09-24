@@ -9,9 +9,10 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.SortedMap;
+import java.util.Map.Entry;
+import java.util.SequencedMap;
 
+import static com.brinvex.util.java.Collectors.toLinkedMap;
 import static java.lang.Math.toIntExact;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -37,7 +38,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
             LocalDate endDateIncl,
             BigDecimal startValueExcl,
             BigDecimal endValueIncl,
-            SortedMap<LocalDate, BigDecimal> flows,
+            SequencedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
@@ -49,10 +50,13 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
                 Validate.isTrue(endValueIncl.compareTo(ZERO) == 0);
                 return ZERO;
             } else {
-                Map.Entry<LocalDate, BigDecimal> firstFlow = flows.firstEntry();
+                Entry<LocalDate, BigDecimal> firstFlow = flows.firstEntry();
                 adjStartValueExcl = firstFlow.getValue();
                 LocalDate firstFlowDate = firstFlow.getKey();
-                flows = flows.tailMap(firstFlowDate.plusDays(1));
+                flows = flows.entrySet()
+                        .stream()
+                        .dropWhile(e -> !e.getKey().isAfter(firstFlowDate))
+                        .collect(toLinkedMap(Entry::getKey, Entry::getValue));
                 switch (flowTiming) {
                     case BEGINNING_OF_DAY -> adjStartDateIncl = firstFlowDate;
                     case END_OF_DAY -> {
@@ -82,10 +86,13 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
         BigDecimal adjEndValueIncl;
         LocalDate adjEndDateIncl;
         if (endValueIncl.compareTo(ZERO) == 0 && !flows.isEmpty()) {
-            Map.Entry<LocalDate, BigDecimal> lastFlow = flows.lastEntry();
+            Entry<LocalDate, BigDecimal> lastFlow = flows.lastEntry();
             adjEndValueIncl = lastFlow.getValue().negate();
             LocalDate lastFlowDate = lastFlow.getKey();
-            flows = flows.headMap(lastFlowDate);
+            flows = flows.entrySet()
+                    .stream()
+                    .takeWhile(e -> e.getKey().isBefore(lastFlowDate))
+                    .collect(toLinkedMap(Entry::getKey, Entry::getValue));
             switch (flowTiming) {
                 case BEGINNING_OF_DAY -> {
                     int lastCashFlowDateToAdjStartDateComp = lastFlowDate.compareTo(adjStartDateIncl);
@@ -116,7 +123,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
 
         BigDecimal flowSum = ZERO;
         BigDecimal weightedFlowSum = ZERO;
-        for (Map.Entry<LocalDate, BigDecimal> cashFlow : flows.entrySet()) {
+        for (Entry<LocalDate, BigDecimal> cashFlow : flows.entrySet()) {
             LocalDate flowDate = cashFlow.getKey();
             BigDecimal flowValue = cashFlow.getValue();
             Validate.isTrue(!flowDate.isBefore(adjStartDateIncl), () -> "flowDate must not be before adjStartDateIncl, given: %s, %s"

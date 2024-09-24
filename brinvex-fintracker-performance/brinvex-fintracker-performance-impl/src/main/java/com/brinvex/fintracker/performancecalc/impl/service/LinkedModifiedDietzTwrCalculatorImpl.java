@@ -9,7 +9,7 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.SortedMap;
+import java.util.SequencedMap;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
@@ -43,8 +43,8 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
             Function<PerfCalcRequest, BigDecimal> subPeriodReturnCalculator,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
-            SortedMap<LocalDate, BigDecimal> assetValues,
-            SortedMap<LocalDate, BigDecimal> flows,
+            SequencedMap<LocalDate, BigDecimal> assetValues,
+            SequencedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
@@ -64,16 +64,13 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
             Validate.notNull(subPeriodEndValueIncl, () -> "subPeriodEndValueIncl must not be null, missing asset value for endDateIncl=%s"
                     .formatted(subPeriodEndDateIncl));
 
-            SortedMap<LocalDate, BigDecimal> subPeriodFlows = flows.subMap(subPeriodStartDateIncl, subPeriodEndDateExcl);
-            SortedMap<LocalDate, BigDecimal> subPeriodAssetValues = assetValues.subMap(subPeriodStartDateExcl, subPeriodEndDateExcl);
-
             BigDecimal subPeriodFactor = ONE.add(subPeriodReturnCalculator.apply(PerfCalcRequest.builder()
                     .startDateIncl(subPeriodStartDateIncl)
                     .endDateIncl(subPeriodEndDateIncl)
                     .startAssetValueExcl(subPeriodStartValueExcl)
                     .endAssetValueIncl(subPeriodEndValueIncl)
-                    .flows(subPeriodFlows)
-                    .assetValues(subPeriodAssetValues)
+                    .flows(flows)
+                    .assetValues(assetValues)
                     .flowTiming(flowTiming)
                     .annualization(DO_NOT_ANNUALIZE)
                     .calcScale(calcScale)

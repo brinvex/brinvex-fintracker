@@ -11,14 +11,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.SequencedMap;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableSortedMap;
+import static java.util.Collections.unmodifiableSequencedMap;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.toMap;
 
 @Getter
@@ -28,8 +30,8 @@ public final class PerfCalcRequest {
     private final LocalDate endDateIncl;
     private final BigDecimal startAssetValueExcl;
     private final BigDecimal endAssetValueIncl;
-    private final SortedMap<LocalDate, BigDecimal> assetValues;
-    private final SortedMap<LocalDate, BigDecimal> flows;
+    private final SequencedMap<LocalDate, BigDecimal> assetValues;
+    private final SequencedMap<LocalDate, BigDecimal> flows;
     private final FlowTiming flowTiming;
     private final AnnualizationOption annualization;
     private final int calcScale;
@@ -164,7 +166,7 @@ public final class PerfCalcRequest {
         }
     }
 
-    private static SortedMap<LocalDate, BigDecimal> sanitizeAssetValues(
+    private static SequencedMap<LocalDate, BigDecimal> sanitizeAssetValues(
             Collection<Entry<LocalDate, BigDecimal>> assetValues,
             LocalDate startDateIncl,
             LocalDate endDateIncl,
@@ -176,51 +178,54 @@ public final class PerfCalcRequest {
         }
 
         LocalDate startDateExcl = startDateIncl.minusDays(1);
-        TreeMap<LocalDate, BigDecimal> sortedAssetValues = new TreeMap<>();
-        assetValues.forEach(e -> {
-            LocalDate date = e.getKey();
-            if (!date.isBefore(startDateExcl) && !date.isAfter(endDateIncl)) {
-                BigDecimal value = e.getValue();
-                BigDecimal old = sortedAssetValues.put(date, value);
-                if (old != null) {
-                    throw new IllegalArgumentException(
-                            ("The assetValues collection must not contain more than one entry for the same date; " +
-                             "given: %s, %s, %s")
-                                    .formatted(date, old, value));
-                }
-            }
-        });
+        LinkedHashMap<LocalDate, BigDecimal> sanitizedAssetValues = new LinkedHashMap<>();
+        assetValues
+                .stream()
+                .dropWhile(e -> e.getKey().isBefore(startDateExcl))
+                .takeWhile(e -> !e.getKey().isAfter(endDateIncl))
+                .sorted(Entry.comparingByKey())
+                .forEach(e -> {
+                    LocalDate date = e.getKey();
+                    BigDecimal value = e.getValue();
+                    BigDecimal oldValue = sanitizedAssetValues.put(date, value);
+                    if (oldValue != null) {
+                        throw new IllegalArgumentException((
+                                "The assetValues collection must not contain more than one entry for the same date; " +
+                                "given: %s, %s, %s")
+                                .formatted(date, oldValue, value));
+                    }
+                });
 
-        BigDecimal assetValueForStartDateExcl = sortedAssetValues.get(startDateExcl);
+        BigDecimal assetValueForStartDateExcl = sanitizedAssetValues.get(startDateExcl);
         if (assetValueForStartDateExcl != null) {
             if (startAssetValueExcl.compareTo(assetValueForStartDateExcl) != 0) {
-                throw new IllegalArgumentException(
-                        ("If the assetValues collection contains an entry for startDateExcl, " +
-                         "it must be equal to the given startAssetValueExcl; " +
-                         "given: startDateExcl=%s, assetValueForStartDateExcl=%s, startAssetValueExcl=%s")
-                                .formatted(startDateExcl, assetValueForStartDateExcl, startAssetValueExcl));
+                throw new IllegalArgumentException((
+                        "If the assetValues collection contains an entry for startDateExcl, " +
+                        "it must be equal to the given startAssetValueExcl; " +
+                        "given: startDateExcl=%s, assetValueForStartDateExcl=%s, startAssetValueExcl=%s")
+                        .formatted(startDateExcl, assetValueForStartDateExcl, startAssetValueExcl));
             }
         } else {
-            sortedAssetValues.put(startDateExcl, startAssetValueExcl);
+            sanitizedAssetValues.putFirst(startDateExcl, startAssetValueExcl);
         }
 
-        BigDecimal assetValueForEndDateIncl = sortedAssetValues.get(endDateIncl);
+        BigDecimal assetValueForEndDateIncl = sanitizedAssetValues.get(endDateIncl);
         if (assetValueForEndDateIncl != null) {
             if (endAssetValueIncl.compareTo(assetValueForEndDateIncl) != 0) {
-                throw new IllegalArgumentException(
-                        ("If the assetValues collection contains an entry for endDateIncl, " +
-                         "it must be equal to the given endAssetValueIncl; " +
-                         "given: endDateIncl=%s, assetValueForEndDateIncl=%s, endAssetValueIncl=%s")
-                                .formatted(endDateIncl, assetValueForEndDateIncl, endAssetValueIncl));
+                throw new IllegalArgumentException((
+                        "If the assetValues collection contains an entry for endDateIncl, " +
+                        "it must be equal to the given endAssetValueIncl; " +
+                        "given: endDateIncl=%s, assetValueForEndDateIncl=%s, endAssetValueIncl=%s")
+                        .formatted(endDateIncl, assetValueForEndDateIncl, endAssetValueIncl));
             }
         } else {
-            sortedAssetValues.put(endDateIncl, endAssetValueIncl);
+            sanitizedAssetValues.putLast(endDateIncl, endAssetValueIncl);
         }
 
-        return unmodifiableSortedMap(sortedAssetValues);
+        return unmodifiableSequencedMap(sanitizedAssetValues);
     }
 
-    private static SortedMap<LocalDate, BigDecimal> sanitizeFlows(
+    private static SequencedMap<LocalDate, BigDecimal> sanitizeFlows(
             Collection<Entry<LocalDate, BigDecimal>> flows,
             LocalDate startDateIncl,
             LocalDate endDateIncl
@@ -228,14 +233,18 @@ public final class PerfCalcRequest {
         if (flows == null) {
             flows = emptySet();
         }
-        return unmodifiableSortedMap((SortedMap<LocalDate, ? extends BigDecimal>) flows
+        return unmodifiableSequencedMap((SequencedMap<LocalDate, ? extends BigDecimal>) flows
                 .stream()
                 .filter(e -> {
                     LocalDate date = e.getKey();
                     return !date.isBefore(startDateIncl) && !date.isAfter(endDateIncl);
                 })
+                .collect(groupingBy(Entry::getKey, reducing(ZERO, Entry::getValue, BigDecimal::add)))
+                .entrySet()
+                .stream()
                 .filter(e -> e.getValue().compareTo(ZERO) != 0)
-                .collect(toMap(Entry::getKey, Entry::getValue, BigDecimal::add, TreeMap::new)));
+                .sorted(Entry.comparingByKey())
+                .collect(toMap(Entry::getKey, Entry::getValue, BigDecimal::add, LinkedHashMap::new)));
     }
 
 }
