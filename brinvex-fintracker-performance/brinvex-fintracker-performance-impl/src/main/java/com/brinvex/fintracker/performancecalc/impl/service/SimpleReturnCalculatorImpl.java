@@ -31,7 +31,7 @@ public class SimpleReturnCalculatorImpl extends BaseCalculatorImpl implements Pe
             if (endAssetValueIncl.compareTo(ZERO) != 0) {
                 throw new IllegalArgumentException((
                         "if startAssetValueExcl is zero, then the endAssetValueIncl must be zero, given: %s")
-                        .formatted(startAssetValueExcl));
+                        .formatted(endAssetValueIncl));
             }
             cumulReturn = ZERO;
         } else if (endAssetValueIncl.compareTo(ZERO) == 0) {

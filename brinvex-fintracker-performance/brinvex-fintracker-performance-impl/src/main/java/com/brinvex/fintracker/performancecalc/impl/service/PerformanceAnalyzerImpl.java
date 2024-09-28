@@ -10,6 +10,7 @@ import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.MwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TwrCalculator;
+import com.brinvex.util.java.Num;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -54,6 +55,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         LocalDate endDateIncl = perfAnalysisReq.endDateIncl();
         FlowTiming flowTiming = perfAnalysisReq.flowTiming();
         PeriodUnit periodUnit = perfAnalysisReq.resultPeriodUnit();
+        boolean resultRatesInPercent = perfAnalysisReq.resultRatesInPercent();
         Integer calcScale = perfAnalysisReq.calcScale();
         Integer resultScale = perfAnalysisReq.resultScale();
         RoundingMode roundingMode = perfAnalysisReq.roundingMode();
@@ -72,6 +74,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                     twrCalculator,
                     mwrCalculator,
                     flowTiming,
+                    resultRatesInPercent,
                     calcScale,
                     resultScale,
                     roundingMode
@@ -106,7 +109,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             SortedMap<LocalDate, BigDecimal> periodFlows = sortedFlows.subMap(periodStartDateIncl, periodEndDateExcl);
 
             PerfCalcRequest periodPerfCalcReq = PerfCalcRequest.builder()
-                    .startDateIncl(periodStartDateExcl)
+                    .startDateIncl(periodStartDateIncl)
                     .endDateIncl(periodEndDateIncl)
                     .startAssetValueExcl(periodStartValueExcl)
                     .endAssetValueIncl(periodEndValueIncl)
@@ -149,15 +152,16 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             results.add(PerfAnalysis.builder()
                     .periodStartDateIncl(periodStartDateIncl)
                     .periodEndDateIncl(periodEndDateIncl)
+                    .periodCaption(periodUnit.caption(periodStartDateIncl))
                     .periodStartAssetValueExcl(periodStartValueExcl)
                     .periodEndAssetValueIncl(periodEndValueIncl)
-                    .flowSum(periodFlowSum)
-                    .periodTwr(periodTwr.setScale(resultScale, roundingMode))
-                    .cumulativeTwr(cumulTwrFactor.subtract(ONE).setScale(resultScale, roundingMode))
-                    .annualizedTwr(annTwrFactor.subtract(ONE).setScale(resultScale, roundingMode))
-                    .periodMwr(periodMwr.setScale(resultScale, roundingMode))
-                    .cumulativeMwr(cumulMwr.setScale(resultScale, roundingMode))
-                    .annualizedMwr(annMwr.setScale(resultScale, roundingMode))
+                    .periodFlow(periodFlowSum)
+                    .periodTwr(toPercentAndScale(periodTwr, resultRatesInPercent, resultScale, roundingMode))
+                    .cumulativeTwr(toPercentAndScale(cumulTwrFactor.subtract(ONE), resultRatesInPercent, resultScale, roundingMode))
+                    .annualizedTwr(toPercentAndScale(annTwrFactor.subtract(ONE), resultRatesInPercent, resultScale, roundingMode))
+                    .periodMwr(toPercentAndScale(periodMwr, resultRatesInPercent, resultScale, roundingMode))
+                    .cumulativeMwr(toPercentAndScale(cumulMwr, resultRatesInPercent, resultScale, roundingMode))
+                    .annualizedMwr(toPercentAndScale(annMwr, resultRatesInPercent, resultScale, roundingMode))
                     .build());
 
             periodStartDateIncl = periodEndDateIncl.plusDays(1);
@@ -175,6 +179,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             TwrCalculator twrCalculator,
             MwrCalculator mwrCalculator,
             FlowTiming flowTiming,
+            boolean resultRatesInPercent,
             int calcScale,
             int resultScale,
             RoundingMode roundingMode
@@ -239,19 +244,30 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             results.add(PerfAnalysis.builder()
                     .periodStartDateIncl(periodStartDateIncl)
                     .periodEndDateIncl(periodEndDateIncl)
+                    .periodCaption(PeriodUnit.DAY.caption(startDateIncl))
                     .periodStartAssetValueExcl(periodStartValueExcl)
                     .periodEndAssetValueIncl(periodEndValueIncl)
-                    .flowSum(periodFlowSum)
-                    .periodTwr(periodTwr.setScale(resultScale, roundingMode))
-                    .cumulativeTwr(cumulTwrFactor.subtract(ONE).setScale(resultScale, roundingMode))
-                    .annualizedTwr(annTwrFactor.subtract(ONE).setScale(resultScale, roundingMode))
-                    .periodMwr(periodMwr.setScale(resultScale, roundingMode))
-                    .cumulativeMwr(cumulMwr.setScale(resultScale, roundingMode))
-                    .annualizedMwr(annMwr.setScale(resultScale, roundingMode))
+                    .periodFlow(periodFlowSum)
+                    .periodTwr(toPercentAndScale(periodTwr, resultRatesInPercent, resultScale, roundingMode))
+                    .cumulativeTwr(toPercentAndScale(cumulTwrFactor.subtract(ONE), resultRatesInPercent, resultScale, roundingMode))
+                    .annualizedTwr(toPercentAndScale(annTwrFactor.subtract(ONE), resultRatesInPercent, resultScale, roundingMode))
+                    .periodMwr(toPercentAndScale(periodMwr, resultRatesInPercent, resultScale, roundingMode))
+                    .cumulativeMwr(toPercentAndScale(cumulMwr, resultRatesInPercent, resultScale, roundingMode))
+                    .annualizedMwr(toPercentAndScale(annMwr, resultRatesInPercent, resultScale, roundingMode))
                     .build());
 
             periodStartDateIncl = periodEndDateIncl.plusDays(1);
         }
         return results;
+    }
+
+    private static BigDecimal toPercentAndScale(BigDecimal input, boolean toPercent, int scale, RoundingMode roundingMode) {
+        if (input == null) {
+            return null;
+        }
+        if (toPercent) {
+            input = input.multiply(Num._100);
+        }
+        return input.setScale(scale, roundingMode);
     }
 }

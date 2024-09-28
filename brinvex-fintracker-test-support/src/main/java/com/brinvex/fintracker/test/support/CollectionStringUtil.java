@@ -11,10 +11,23 @@ import java.util.function.Function;
 public class CollectionStringUtil {
 
     //todo 1 - Consider to move into brinvex-util-java
-    public static <E> String collectionToGridString(Collection<E> items, List<String> headers, List<Function<E, Object>> columnProjections) {
+    public static <E> String collectionToGridString(
+            Collection<E> items,
+            List<String> headers,
+            List<Function<E, Object>> columnProjections
+    ) {
         String lineSeparator = "\n";
-        String valueSeparator = ";";
+        String valueSeparator = "; ";
+        return collectionToGridString(items, headers, columnProjections, lineSeparator, valueSeparator);
+    }
 
+    public static <E> String collectionToGridString(
+            Collection<E> items,
+            List<String> headers,
+            List<Function<E, Object>> columnProjections,
+            String lineSeparator,
+            String valueSeparator
+    ) {
         StringBuilder sb = new StringBuilder();
         int colCount = headers.size();
         List<Integer> columnLengths = new ArrayList<>(headers.size());
@@ -45,10 +58,9 @@ public class CollectionStringUtil {
                 String header = headers.get(c);
                 Integer colLength = columnLengths.get(c);
                 if (c != 0) {
-                    line.append(" ");
+                    line.append(valueSeparator);
                 }
                 line.append(("%" + colLength + "s").formatted(header));
-                line.append(valueSeparator);
             }
             sb.append(line);
             sb.append(lineSeparator);
@@ -58,12 +70,11 @@ public class CollectionStringUtil {
                 StringBuilder line = new StringBuilder();
                 for (int c = 0; c < colCount; c++) {
                     if (c != 0) {
-                        line.append(" ");
+                        line.append(valueSeparator);
                     }
                     String itemString = itemStrings.get(c);
                     Integer colLength = columnLengths.get(c);
                     line.append(("%" + colLength + "s").formatted(itemString));
-                    line.append(valueSeparator);
                 }
                 sb.append(line);
                 sb.append(lineSeparator);

@@ -28,11 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModifiedDietzMwrCalculatorTest {
 
-    private final FinTracker finTracker = FinTracker.newInstance();
+    private final static FinTracker finTracker = FinTracker.newInstance();
 
-    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
+    private final static PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
 
-    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
+    private final static ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
 
     @Test
     void dietz_readmeExample() {
@@ -48,8 +48,10 @@ class ModifiedDietzMwrCalculatorTest {
                         new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))))
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualization(DO_NOT_ANNUALIZE)
+                .resultInPercent(true)
+                .resultScale(4)
                 .build());
-        assertEquals("0.152239", mwrReturn.toPlainString());
+        assertEquals("15.2239", mwrReturn.toPlainString());
 
     }
 

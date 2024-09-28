@@ -146,7 +146,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
             throw new CalculationException((
                     "Could not calculate ModifiedDietz return of given data: " +
                     "adjStartValueExcl=%s, adjEndValueIncl=%s, " +
-                    "weightedFlowSum=%s, flowSum=%s, " +
+                    "weightedFlowSum=%s, periodFlow=%s, " +
                     "startDateIncl=%s, endDateIncl=%s")
                     .formatted(
                             adjStartValueExcl, adjEndValueIncl,

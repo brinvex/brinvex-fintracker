@@ -2,6 +2,7 @@ package com.brinvex.fintracker.core.api.model.general;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.IsoFields;
 
 import static java.util.Objects.requireNonNull;
@@ -44,5 +45,18 @@ public enum PeriodUnit implements Comparable<PeriodUnit> {
         };
     }
 
+    public String caption(LocalDate dateIncl) {
+        return switch (this) {
+            case DAY -> Lazy.DAY_CAPTION_FMT.format(dateIncl);
+            case MONTH -> Lazy.MONTH_CAPTION_FMT.format(dateIncl);
+            case QUARTER -> String.valueOf(dateIncl.get(IsoFields.QUARTER_OF_YEAR));
+            case YEAR -> String.valueOf(dateIncl.getYear());
+        };
+    }
+
+    private static class Lazy {
+        private static final DateTimeFormatter DAY_CAPTION_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        private static final DateTimeFormatter MONTH_CAPTION_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
+    }
 }
 

@@ -8,6 +8,7 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -85,7 +86,11 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             Entry<LocalDate, BigDecimal> firstFlowEntry = flows.firstEntry();
             if (firstFlowEntry != null && firstFlowEntry.getKey().isEqual(startDateIncl)) {
                 startAssetValueExcl = startAssetValueExcl.add(firstFlowEntry.getValue());
-                flows = flows.tailMap(startDateIncl.plusDays(1));
+                if (flows.size() == 1) {
+                    flows = Collections.emptySortedMap();
+                } else {
+                    flows = flows.tailMap(startDateIncl.plusDays(1));
+                }
             }
         }
 

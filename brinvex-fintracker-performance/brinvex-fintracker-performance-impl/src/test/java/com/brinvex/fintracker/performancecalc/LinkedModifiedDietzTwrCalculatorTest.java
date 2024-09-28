@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LinkedModifiedDietzTwrCalculatorTest {
 
-    private final FinTracker finTracker = FinTracker.newInstance();
+    private static final FinTracker finTracker = FinTracker.newInstance();
 
     @Test
     void linkedModifiedDietzTwr_readmeExample() {

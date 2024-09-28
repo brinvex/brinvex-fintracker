@@ -26,15 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PerformanceCalculatorTest {
 
-    private final FinTracker finTracker = FinTracker.newInstance();
+    private static final FinTracker finTracker = FinTracker.newInstance();
 
-    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
+    private static final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
 
-    private final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
+    private static final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
 
-    private final LinkedModifiedDietzTwrCalculator linkedModifiedDietzTwrCalculator = perfModule.linkedModifiedDietzTwrCalculator();
+    private static final LinkedModifiedDietzTwrCalculator linkedModifiedDietzTwrCalculator = perfModule.linkedModifiedDietzTwrCalculator();
 
-    private final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
+    private static final ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
 
     @Test
     void perfCalc1() {

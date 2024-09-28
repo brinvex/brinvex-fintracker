@@ -15,6 +15,10 @@ public record DateAmount(LocalDate date, BigDecimal amount) implements Serializa
         }
     }
 
+    public DateAmount(String date, String amount) {
+        this(LocalDate.parse(date), new BigDecimal(amount));
+    }
+
     public DateAmount add(DateAmount other) {
         if (!date.isEqual(other.date())) {
             throw new IllegalArgumentException(

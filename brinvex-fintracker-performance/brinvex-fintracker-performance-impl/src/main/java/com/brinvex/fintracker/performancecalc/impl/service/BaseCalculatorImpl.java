@@ -2,6 +2,7 @@ package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
+import com.brinvex.util.java.Num;
 
 import java.math.BigDecimal;
 
@@ -30,6 +31,9 @@ public abstract class BaseCalculatorImpl implements PerformanceCalculator {
                 perfCalcRequest.startDateIncl(),
                 perfCalcRequest.endDateIncl()
         );
+        if (perfCalcRequest.resultInPercent()) {
+            unscaledAnnReturn = unscaledAnnReturn.multiply(Num._100);
+        }
         return unscaledAnnReturn.setScale(perfCalcRequest.resultScale(), perfCalcRequest.roundingMode());
     }
 

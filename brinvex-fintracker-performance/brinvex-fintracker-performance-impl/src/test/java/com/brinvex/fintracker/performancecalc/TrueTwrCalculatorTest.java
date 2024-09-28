@@ -19,11 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TrueTwrCalculatorTest {
 
-    private final FinTracker finTracker = FinTracker.newInstance();
+    private static final FinTracker finTracker = FinTracker.newInstance();
 
-    private final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
+    private static final PerformanceModule perfModule = finTracker.get(PerformanceModule.class);
 
-    private final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
+    private static final TrueTwrCalculator trueTwrCalculator = perfModule.trueTwrCalculator();
 
     @Test
     void twr_readmeExample() {
@@ -42,8 +42,10 @@ class TrueTwrCalculatorTest {
                         new DateAmount(parse("2020-06-10"), new BigDecimal("132000"))))
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualization(DO_NOT_ANNUALIZE)
+                .resultInPercent(true)
+                .resultScale(4)
                 .build());
-        assertEquals("0.196053", twrReturn.toPlainString());
+        assertEquals("19.6053", twrReturn.toPlainString());
     }
 
     @Test

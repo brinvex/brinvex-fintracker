@@ -17,6 +17,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptySortedMap;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSortedMap;
 import static java.util.stream.Collectors.toMap;
@@ -32,6 +33,7 @@ public final class PerfCalcRequest {
     private final SortedMap<LocalDate, BigDecimal> flows;
     private final FlowTiming flowTiming;
     private final AnnualizationOption annualization;
+    private final boolean resultInPercent;
     private final int calcScale;
     private final int resultScale;
     private final RoundingMode roundingMode;
@@ -47,6 +49,7 @@ public final class PerfCalcRequest {
             Collection<DateAmount> flowsCollection,
             FlowTiming flowTiming,
             AnnualizationOption annualization,
+            Boolean resultInPercent,
             Integer calcScale,
             Integer resultScale,
             RoundingMode roundingMode
@@ -79,6 +82,7 @@ public final class PerfCalcRequest {
         this.endDateIncl = endDateIncl;
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
         this.annualization = annualization == null ? AnnualizationOption.DO_NOT_ANNUALIZE : annualization;
+        this.resultInPercent = resultInPercent != null && resultInPercent;
         this.calcScale = calcScale == null ? 20 : calcScale;
         this.resultScale = resultScale == null ? 6 : resultScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
@@ -121,6 +125,7 @@ public final class PerfCalcRequest {
         private Collection<DateAmount> flowsCollection;
         private FlowTiming flowTiming;
         private AnnualizationOption annualization;
+        Boolean resultInPercent;
         Integer calcScale;
         Integer resultScale;
         RoundingMode roundingMode;
@@ -168,10 +173,10 @@ public final class PerfCalcRequest {
                     flowsCollection,
                     flowTiming,
                     annualization,
+                    resultInPercent,
                     calcScale,
                     resultScale,
-                    roundingMode
-            );
+                    roundingMode);
         }
 
         public PerfCalcRequestBuilder copy() {
@@ -182,6 +187,7 @@ public final class PerfCalcRequest {
             copy.endAssetValueIncl = endAssetValueIncl;
             copy.flowTiming = flowTiming;
             copy.annualization = annualization;
+            copy.resultInPercent = resultInPercent;
             copy.calcScale = calcScale;
             copy.resultScale = resultScale;
             copy.assetValuesMap = assetValuesMap;
@@ -234,7 +240,7 @@ public final class PerfCalcRequest {
                 LocalDate subFirstKey = startDateIncl.isBefore(firstKey) ? firstKey : startDateIncl;
                 LocalDate subLastKey = endDateIncl.isAfter(lastKey) ? lastKey : endDateIncl;
                 if (subFirstKey.isAfter(subLastKey)) {
-                    sanitizedFlows = new TreeMap<>();
+                    sanitizedFlows = emptySortedMap();
                 } else {
                     sanitizedFlows = sanitizedFlows.subMap(subFirstKey, subLastKey.plusDays(1));
                 }
@@ -246,7 +252,7 @@ public final class PerfCalcRequest {
                         .filter(dateAmount -> !dateAmount.isBefore(startDateIncl) && !dateAmount.isAfter(endDateIncl))
                         .collect(toMap(DateAmount::date, DateAmount::amount, BigDecimal::add, TreeMap::new));
             } else {
-                sanitizedFlows = new TreeMap<>();
+                sanitizedFlows = emptySortedMap();
             }
         }
         return sanitizedFlows;

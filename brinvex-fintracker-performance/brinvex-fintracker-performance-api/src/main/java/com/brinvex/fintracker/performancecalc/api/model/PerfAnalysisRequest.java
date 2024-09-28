@@ -33,6 +33,7 @@ public final class PerfAnalysisRequest {
     private final FlowTiming flowTiming;
     private final Class<? extends TwrCalculator> twrCalculatorType;
     private final Class<? extends MwrCalculator> mwrCalculatorType;
+    private final boolean resultRatesInPercent;
     private final Integer calcScale;
     private final Integer resultScale;
     private final RoundingMode roundingMode;
@@ -48,6 +49,7 @@ public final class PerfAnalysisRequest {
             Class<? extends TwrCalculator> twrCalculatorType,
             Class<? extends MwrCalculator> mwrCalculatorType,
             FlowTiming flowTiming,
+            Boolean resultRatesInPercent,
             Integer calcScale,
             Integer resultScale,
             RoundingMode roundingMode
@@ -68,6 +70,7 @@ public final class PerfAnalysisRequest {
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
         this.twrCalculatorType = twrCalculatorType == null ? TrueTwrCalculator.class : twrCalculatorType;
         this.mwrCalculatorType = mwrCalculatorType == null ? ModifiedDietzMwrCalculator.class : mwrCalculatorType;
+        this.resultRatesInPercent = resultRatesInPercent != null && resultRatesInPercent;
         this.calcScale = calcScale == null ? 20 : calcScale;
         this.resultScale = resultScale == null ? 6 : resultScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
@@ -106,6 +109,7 @@ public final class PerfAnalysisRequest {
         private FlowTiming flowTiming;
         private Class<? extends TwrCalculator> twrCalculatorType;
         private Class<? extends MwrCalculator> mwrCalculatorType;
+        Boolean resultRatesInPercent;
         private Integer calcScale;
         private Integer resultScale;
         private RoundingMode roundingMode;
@@ -153,10 +157,10 @@ public final class PerfAnalysisRequest {
                     this.twrCalculatorType,
                     this.mwrCalculatorType,
                     this.flowTiming,
+                    this.resultRatesInPercent,
                     this.calcScale,
                     this.resultScale,
-                    this.roundingMode
-            );
+                    this.roundingMode);
         }
 
     }
