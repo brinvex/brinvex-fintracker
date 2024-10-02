@@ -41,6 +41,8 @@ BigDecimal twrReturn = twrCalculator.calculateReturn(PerfCalcRequest.builder()
         .annualization(DO_NOT_ANNUALIZE)
         .resultInPercent(true)
         .resultScale(4)
+        .build());
+assertEquals("19.6053", twrReturn.toPlainString());
 ````
 
 #### Modified Dietz Money-Weighted Rate of Return Calculator
@@ -52,20 +54,22 @@ It is one of the methodologies of calculating returns recommended
 by the _Investment Performance Council (IPC)_ as part of their _Global Investment Performance Standards (GIPS)_.
 
 ````
-ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)   
-        .modifiedDietzMwrCalculator();                                               
-BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()       
-        .startDateIncl(parse("2020-06-01"))                                          
-        .endDateIncl(parse("2020-06-30"))                                            
-        .startAssetValueExcl(new BigDecimal("100000"))                               
-        .endAssetValueIncl(new BigDecimal("135000"))                                 
-        .flows(List.of(                                                              
-                new DateAmount("2020-06-06", "-2000"),                               
-                new DateAmount("2020-06-11", "20000")))                              
-        .flowTiming(BEGINNING_OF_DAY)                                                
-        .annualization(DO_NOT_ANNUALIZE)                                             
-        .resultInPercent(true)                                                       
-        .resultScale(4)                                                              
+ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)          
+        .modifiedDietzMwrCalculator();                                                      
+BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()              
+        .startDateIncl(parse("2020-06-01"))                                                 
+        .endDateIncl(parse("2020-06-30"))                                                   
+        .startAssetValueExcl(new BigDecimal("100000"))                                      
+        .endAssetValueIncl(new BigDecimal("135000"))                                        
+        .flows(List.of(                                                                     
+                new DateAmount("2020-06-06", "-2000"),                                      
+                new DateAmount("2020-06-11", "20000")))                                     
+        .flowTiming(BEGINNING_OF_DAY)                                                       
+        .annualization(DO_NOT_ANNUALIZE)                                                    
+        .resultInPercent(true)                                                              
+        .resultScale(4)                                                                     
+        .build());                                                                          
+assertEquals("15.2239", mwrReturn.toPlainString());                                         
 ````
 
 #### Linked Modified Dietz Time-Weighted Rate of Return Calculator
