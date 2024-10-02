@@ -44,8 +44,8 @@ class ModifiedDietzMwrCalculatorTest {
                 .startAssetValueExcl(new BigDecimal("100000"))
                 .endAssetValueIncl(new BigDecimal("135000"))
                 .flows(List.of(
-                        new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
-                        new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))))
+                        new DateAmount("2020-06-06", "-2000"),
+                        new DateAmount("2020-06-11", "20000")))
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualization(DO_NOT_ANNUALIZE)
                 .resultInPercent(true)

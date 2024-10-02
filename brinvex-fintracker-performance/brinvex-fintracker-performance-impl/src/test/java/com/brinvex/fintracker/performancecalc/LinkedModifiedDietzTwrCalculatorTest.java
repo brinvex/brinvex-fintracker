@@ -29,10 +29,10 @@ class LinkedModifiedDietzTwrCalculatorTest {
                 .startAssetValueExcl(new BigDecimal("10000"))
                 .endAssetValueIncl(new BigDecimal("10200"))
                 .flows(List.of(
-                        new DateAmount(parse("2021-02-15"), new BigDecimal("100"))))
+                        new DateAmount("2021-02-15", "100")))
                 .assetValues(List.of(
-                        new DateAmount(parse("2021-01-31"), new BigDecimal("10100")),
-                        new DateAmount(parse("2021-02-28"), new BigDecimal("10201"))
+                        new DateAmount("2021-01-31", "10100"),
+                        new DateAmount("2021-02-28", "10201")
                 ))
                 .flowTiming(BEGINNING_OF_DAY)
                 .resultScale(10)

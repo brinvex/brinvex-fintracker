@@ -32,15 +32,15 @@ BigDecimal twrReturn = twrCalculator.calculateReturn(PerfCalcRequest.builder()
         .startAssetValueExcl(new BigDecimal("100000"))
         .endAssetValueIncl(new BigDecimal("135000"))
         .flows(List.of(
-                new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
-                new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))))
+                new DateAmount("2020-06-06", "-2000"),
+                new DateAmount("2020-06-11", "20000")))
         .assetValues(List.of(
-                new DateAmount(parse("2020-06-05"), new BigDecimal("101000")),
-                new DateAmount(parse("2020-06-10"), new BigDecimal("132000"))))
+                new DateAmount("2020-06-05", "101000"),
+                new DateAmount("2020-06-10", "132000")))
         .flowTiming(BEGINNING_OF_DAY)
         .annualization(DO_NOT_ANNUALIZE)
-        .build());
-assertEquals("0.196053", twrReturn.toPlainString());
+        .resultInPercent(true)
+        .resultScale(4)
 ````
 
 #### Modified Dietz Money-Weighted Rate of Return Calculator
@@ -52,20 +52,20 @@ It is one of the methodologies of calculating returns recommended
 by the _Investment Performance Council (IPC)_ as part of their _Global Investment Performance Standards (GIPS)_.
 
 ````
-ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)
-        .modifiedDietzMwrCalculator();
-BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
-        .startDateIncl(parse("2020-06-01"))
-        .endDateIncl(parse("2020-06-30"))
-        .startAssetValueExcl(new BigDecimal("100000"))
-        .endAssetValueIncl(new BigDecimal("135000"))
-        .flows(List.of(
-                new DateAmount(parse("2020-06-06"), new BigDecimal("-2000")),
-                new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))))
-        .flowTiming(BEGINNING_OF_DAY)
-        .annualization(DO_NOT_ANNUALIZE)
-        .build());
-assertEquals("0.152239", mwrReturn.toPlainString());
+ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)   
+        .modifiedDietzMwrCalculator();                                               
+BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()       
+        .startDateIncl(parse("2020-06-01"))                                          
+        .endDateIncl(parse("2020-06-30"))                                            
+        .startAssetValueExcl(new BigDecimal("100000"))                               
+        .endAssetValueIncl(new BigDecimal("135000"))                                 
+        .flows(List.of(                                                              
+                new DateAmount("2020-06-06", "-2000"),                               
+                new DateAmount("2020-06-11", "20000")))                              
+        .flowTiming(BEGINNING_OF_DAY)                                                
+        .annualization(DO_NOT_ANNUALIZE)                                             
+        .resultInPercent(true)                                                       
+        .resultScale(4)                                                              
 ````
 
 #### Linked Modified Dietz Time-Weighted Rate of Return Calculator
@@ -80,10 +80,10 @@ BigDecimal twrReturn = linkedTwrCalculator.calculateReturn(PerfCalcRequest.build
         .startAssetValueExcl(new BigDecimal("10000"))
         .endAssetValueIncl(new BigDecimal("10200"))
         .flows(List.of(
-                new DateAmount(parse("2021-02-15"), new BigDecimal("100"))))
+                new DateAmount("2021-02-15", "100")))
         .assetValues(List.of(
-                new DateAmount(parse("2021-01-31"), new BigDecimal("10100")),
-                new DateAmount(parse("2021-02-28"), new BigDecimal("10201"))
+                new DateAmount("2021-01-31", "10100"),
+                new DateAmount("2021-02-28", "10201")
         ))
         .flowTiming(BEGINNING_OF_DAY)
         .resultScale(10)
