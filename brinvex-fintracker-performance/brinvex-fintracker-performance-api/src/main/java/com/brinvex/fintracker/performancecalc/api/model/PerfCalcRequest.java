@@ -31,6 +31,7 @@ public final class PerfCalcRequest {
     private final BigDecimal endAssetValueIncl;
     private final Map<LocalDate, BigDecimal> assetValues;
     private final SortedMap<LocalDate, BigDecimal> flows;
+    private final int largeFlowLevelInPercent;
     private final FlowTiming flowTiming;
     private final AnnualizationOption annualization;
     private final boolean resultInPercent;
@@ -47,6 +48,7 @@ public final class PerfCalcRequest {
             Collection<DateAmount> assetValuesCollection,
             Map<LocalDate, BigDecimal> flowsMap,
             Collection<DateAmount> flowsCollection,
+            Integer largeFlowLevelInPercent,
             FlowTiming flowTiming,
             AnnualizationOption annualization,
             Boolean resultInPercent,
@@ -80,6 +82,7 @@ public final class PerfCalcRequest {
         this.endAssetValueIncl = endAssetValueIncl;
         this.startDateIncl = startDateIncl;
         this.endDateIncl = endDateIncl;
+        this.largeFlowLevelInPercent = largeFlowLevelInPercent == null ? 5 : largeFlowLevelInPercent;
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
         this.annualization = annualization == null ? AnnualizationOption.DO_NOT_ANNUALIZE : annualization;
         this.resultInPercent = resultInPercent != null && resultInPercent;
@@ -123,6 +126,7 @@ public final class PerfCalcRequest {
         private Map<LocalDate, BigDecimal> flowsMap;
         @Setter(AccessLevel.NONE)
         private Collection<DateAmount> flowsCollection;
+        private Integer largeFlowLevelInPercent;
         private FlowTiming flowTiming;
         private AnnualizationOption annualization;
         Boolean resultInPercent;
@@ -171,6 +175,7 @@ public final class PerfCalcRequest {
                     assetValuesCollection,
                     flowsMap,
                     flowsCollection,
+                    largeFlowLevelInPercent,
                     flowTiming,
                     annualization,
                     resultInPercent,
@@ -185,6 +190,7 @@ public final class PerfCalcRequest {
             copy.endDateIncl = endDateIncl;
             copy.startAssetValueExcl = startAssetValueExcl;
             copy.endAssetValueIncl = endAssetValueIncl;
+            copy.largeFlowLevelInPercent = largeFlowLevelInPercent;
             copy.flowTiming = flowTiming;
             copy.annualization = annualization;
             copy.resultInPercent = resultInPercent;

@@ -328,4 +328,42 @@ class PerformanceCalculatorTest {
         assertEquals("0.01000094495133500625", ret3.toPlainString());
         assertTrue(ret2.compareTo(ret3) < 0, () -> "ret2=%s, ret3=%s".formatted(ret2, ret3));
     }
+
+    @Test
+    void perfCalc16() {
+        PerfCalcRequestBuilder req = PerfCalcRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2023-12-31"))
+                .endAssetValueIncl(new BigDecimal("1000"))
+                .flowTiming(BEGINNING_OF_DAY)
+                .annualization(DO_NOT_ANNUALIZE);
+
+        BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(req.copy()
+                .startAssetValueExcl(new BigDecimal("2"))
+                .flows(List.of(
+                        new DateAmount(parse("2023-12-15"), new BigDecimal("800"))))
+                .build());
+        BigDecimal ret2 = modifiedDietzMwrCalculator.calculateReturn(req.copy()
+                .startAssetValueExcl(new BigDecimal("2"))
+                .flows(List.of(
+                        new DateAmount(parse("2023-12-16"), new BigDecimal("800"))))
+                .build());
+
+        BigDecimal ret3 = modifiedDietzMwrCalculator.calculateReturn(req.copy()
+                .startAssetValueExcl(new BigDecimal("1"))
+                .flows(List.of(
+                        new DateAmount(parse("2023-12-15"), new BigDecimal("800"))))
+                .build());
+        BigDecimal ret4 = modifiedDietzMwrCalculator.calculateReturn(req.copy()
+                .startAssetValueExcl(new BigDecimal("1"))
+                .flows(List.of(
+                        new DateAmount(parse("2023-12-16"), new BigDecimal("800"))))
+                .build());
+
+        assertTrue(ret1.compareTo(ret2) < 0);
+        assertTrue(ret3.compareTo(ret4) < 0);
+        assertTrue(ret1.compareTo(ret3) < 0, () -> "ret1=%s, ret3=%s".formatted(ret1, ret3));
+        assertTrue(ret2.compareTo(ret4) < 0, () -> "ret2=%s, ret4=%s".formatted(ret2, ret4));
+    }
+
 }

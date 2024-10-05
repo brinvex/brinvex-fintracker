@@ -54,6 +54,17 @@ public enum PeriodUnit implements Comparable<PeriodUnit> {
         };
     }
 
+    public int frequencyPerYear() {
+        return switch (this) {
+            case DAY -> throw new UnsupportedOperationException(
+                    "frequencyPerYear is undefined for PeriodUnit.DAY because the number of days per year is not always the same"
+            );
+            case MONTH -> 12;
+            case QUARTER -> 4;
+            case YEAR -> 1;
+        };
+    }
+
     private static class Lazy {
         private static final DateTimeFormatter DAY_CAPTION_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         private static final DateTimeFormatter MONTH_CAPTION_FMT = DateTimeFormatter.ofPattern("yyyy-MM");

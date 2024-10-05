@@ -6,9 +6,13 @@ import com.brinvex.fintracker.performancecalc.api.PerformanceModule;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysis;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysisRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceAnalyzer;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.LinkedModifiedDietzTwrCalculator;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
 import static com.brinvex.fintracker.test.support.AssertionUtil.assertEqualsWithMultilineMsg;
@@ -23,6 +27,59 @@ public class PerformanceAnalyzerTest {
 
     private static final PerformanceAnalyzer perfAnalyzer = perfModule.performanceAnalyzer();
 
+    private static String perfAnalysesToGridString(List<PerfAnalysis> perfAnalyses) {
+        return collectionToGridString(perfAnalyses,
+                List.of(
+                        "period",
+                        "startVal",
+                        "endVal",
+                        "prdFlow",
+                        "prdTwr",
+                        "cumTwr",
+                        "annTwr",
+                        "prdMwr",
+                        "cumMwr",
+                        "annMwr",
+                        "totContrib",
+                        "prdProf",
+                        "totProf",
+                        "trlAvgProf1Y",
+                        "trlAvgFlow1Y",
+                        "prdIncm",
+                        "trlAvgIncm1Y",
+                        "trlTwr1Y",
+                        "trlTwr2Y",
+                        "trlTwr3Y",
+                        "trlTwr5Y",
+                        "trlTwr10Y"
+                ),
+                List.of(
+                        PerfAnalysis::periodCaption,
+                        PerfAnalysis::periodStartAssetValueExcl,
+                        PerfAnalysis::periodEndAssetValueIncl,
+                        PerfAnalysis::periodFlow,
+                        PerfAnalysis::periodTwr,
+                        PerfAnalysis::cumulativeTwr,
+                        PerfAnalysis::annualizedTwr,
+                        PerfAnalysis::periodMwr,
+                        PerfAnalysis::cumulativeMwr,
+                        PerfAnalysis::annualizedMwr,
+                        PerfAnalysis::totalContribution,
+                        PerfAnalysis::periodProfit,
+                        PerfAnalysis::totalProfit,
+                        PerfAnalysis::trailingAvgProfit1Y,
+                        PerfAnalysis::trailingAvgFlow1Y,
+                        PerfAnalysis::periodIncome,
+                        PerfAnalysis::trailingAvgIncome1Y,
+                        PerfAnalysis::trailingTwr1Y,
+                        PerfAnalysis::trailingTwr2Y,
+                        PerfAnalysis::trailingTwr3Y,
+                        PerfAnalysis::trailingTwr5Y,
+                        PerfAnalysis::trailingTwr10Y
+                )
+        );
+    }
+
     @Test
     void analyzePerformance1() {
         List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
@@ -34,10 +91,12 @@ public class PerformanceAnalyzerTest {
                 ))
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;    10000;  10500;          0;      5.00;     5.00;   5.00;      5.00;     5.00;   5.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;    10000;  10500;       0;   5.00;   5.00;   5.00;   5.00;   5.00;   5.00;      10000;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -55,11 +114,13 @@ public class PerformanceAnalyzerTest {
                 ))
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;    10000;  10500;          0;      5.00;     5.00;   5.00;      5.00;     5.00;   5.00
-                2023-02;    10500;  10500;          0;      0.00;     5.00;   5.00;      0.00;     5.00;   5.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;    10000;  10500;       0;   5.00;   5.00;   5.00;   5.00;   5.00;   5.00;      10000;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;    10500;  10500;       0;   0.00;   5.00;   5.00;   0.00;   5.00;   5.00;      10000;       0;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -77,11 +138,13 @@ public class PerformanceAnalyzerTest {
                 ))
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;        0;      0;          0;      0.00;     0.00;   0.00;      0.00;     0.00;   0.00
-                2023-02;        0;      0;          0;      0.00;     0.00;   0.00;      0.00;     0.00;   0.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -103,11 +166,13 @@ public class PerformanceAnalyzerTest {
                 .flowTiming(BEGINNING_OF_DAY)
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr;  annTwr; periodMwr; cumulMwr;  annMwr
-                2023-01;        0;   1000;        500;    100.00;   100.00;  100.00;    100.00;   100.00;  100.00
-                2023-02;     1000;      0;          0;   -100.00;  -100.00; -100.00;   -100.00;  -100.00; -100.00
+                 period; startVal; endVal; prdFlow;  prdTwr;  cumTwr;  annTwr;  prdMwr;  cumMwr;  annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        0;   1000;     500;  100.00;  100.00;  100.00;  100.00;  100.00;  100.00;        500;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;     1000;      0;       0; -100.00; -100.00; -100.00; -100.00; -100.00; -100.00;        500;   -1000;    -500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -129,11 +194,13 @@ public class PerformanceAnalyzerTest {
                 .flowTiming(BEGINNING_OF_DAY)
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;        0;   1000;        500;    100.00;   100.00; 100.00;    100.00;   100.00; 100.00
-                2023-02;     1000;   1000;          0;      0.00;   100.00; 100.00;      0.00;   100.00; 100.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        0;   1000;     500; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;        500;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;     1000;   1000;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;        500;       0;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -151,12 +218,14 @@ public class PerformanceAnalyzerTest {
                 ))
                 .flowTiming(BEGINNING_OF_DAY)
                 .resultRatesInPercent(true)
+                .calculateMwr(true)
                 .resultScale(2)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;      500;   1000;          0;    100.00;   100.00; 100.00;    100.00;   100.00; 100.00
-                2023-02;     1000;   1000;          0;      0.00;   100.00; 100.00;      0.00;   100.00; 100.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;      500;   1000;       0; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;        500;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;     1000;   1000;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;        500;       0;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
@@ -179,43 +248,349 @@ public class PerformanceAnalyzerTest {
                 .flowTiming(BEGINNING_OF_DAY)
                 .resultRatesInPercent(true)
                 .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
                 .build());
         String expected = """
-                 period; startVal; endVal; periodFlow; periodTwr; cumulTwr; annTwr; periodMwr; cumulMwr; annMwr
-                2023-01;        0;      0;          0;      0.00;     0.00;   0.00;      0.00;     0.00;   0.00
-                2023-02;        0;   1000;        500;    100.00;   100.00; 100.00;    100.00;   100.00; 100.00
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        0;   1000;     500; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;        500;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
                 """;
         String actual = perfAnalysesToGridString(perfAnalyses);
         assertEqualsWithMultilineMsg(expected, actual);
     }
 
-    private static String perfAnalysesToGridString(List<PerfAnalysis> perfAnalyses) {
-        return collectionToGridString(perfAnalyses,
-                List.of(
-                        "period",
-                        "startVal",
-                        "endVal",
-                        "periodFlow",
-                        "periodTwr",
-                        "cumulTwr",
-                        "annTwr",
-                        "periodMwr",
-                        "cumulMwr",
-                        "annMwr"
-                ),
-                List.of(
-                        PerfAnalysis::periodCaption,
-                        PerfAnalysis::periodStartAssetValueExcl,
-                        PerfAnalysis::periodEndAssetValueIncl,
-                        PerfAnalysis::periodFlow,
-                        PerfAnalysis::periodTwr,
-                        PerfAnalysis::cumulativeTwr,
-                        PerfAnalysis::annualizedTwr,
-                        PerfAnalysis::periodMwr,
-                        PerfAnalysis::cumulativeMwr,
-                        PerfAnalysis::annualizedMwr
-                )
-        );
+    @Test
+    void analyzePerformance8() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2023-02-28"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "0"),
+                        new DateAmount("2023-01-31", "0"),
+                        new DateAmount("2023-02-28", "1000")
+                ))
+                .flows(List.of(
+                        new DateAmount("2023-02-15", "500")
+                ))
+                .flowTiming(BEGINNING_OF_DAY)
+                .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        0;   1000;     500; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;        500;     500;     500;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+    @Test
+    void analyzePerformance9() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2023-02-28"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-14", "2"),
+                        new DateAmount("2023-02-28", "1000")
+                ))
+                .flows(List.of(
+                        new DateAmount("2023-02-15", "998")
+                ))
+                .flowTiming(BEGINNING_OF_DAY)
+                .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculatePeriodMwr(true)
+                .calculateMwr(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          1;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        1;   1000;     998; 100.00; 100.00; 100.00;   0.20;   0.42;   0.42;        999;       1;       1;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+    @Test
+    void analyzePerformance10() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2023-03-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-14", "2"),
+                        new DateAmount("2023-02-28", "1000"),
+                        new DateAmount("2023-03-31", "1000")
+                ))
+                .flows(new TreeMap<>(Map.of(
+                        parse("2023-02-15"), new BigDecimal("998"),
+                        parse("2024-02-15"), new BigDecimal("6000000")
+                )))
+                .flowTiming(BEGINNING_OF_DAY)
+                .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          1;       0;       0;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        1;   1000;     998; 100.00; 100.00; 100.00;   0.20;   0.42;   0.42;        999;       1;       1;         0.50;       499.00;    null;         null;     null;     null;     null;     null;      null
+                2023-03;     1000;   1000;       0;   0.00; 100.00; 100.00;   0.00;   0.20;   0.20;        999;       0;       1;         0.33;       332.67;    null;         null;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+
+    @Test
+    void analyzePerformance11() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2024-03-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-28", "2"),
+                        new DateAmount("2023-03-31", "2"),
+                        new DateAmount("2023-04-30", "2"),
+                        new DateAmount("2023-05-31", "2"),
+                        new DateAmount("2023-06-30", "2"),
+                        new DateAmount("2023-07-31", "2"),
+                        new DateAmount("2023-08-31", "2"),
+                        new DateAmount("2023-09-30", "2"),
+                        new DateAmount("2023-10-31", "2"),
+                        new DateAmount("2023-11-30", "2"),
+                        new DateAmount("2023-12-31", "2"),
+                        new DateAmount("2024-01-31", "2"),
+                        new DateAmount("2024-02-29", "2"),
+                        new DateAmount("2024-03-31", "2")
+                ))
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculatePeriodMwr(true)
+                .calculateMwr(true)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          1;       0;       0;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        1;      2;       0; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;          1;       1;       1;         0.50;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-03;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.33;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-04;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.25;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-05;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.20;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-06;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.17;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-07;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.14;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-08;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.13;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-09;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.11;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-10;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.10;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-11;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.09;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-12;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.08;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2024-01;        2;      2;       0;   0.00; 100.00;  89.44;   0.00; 100.00;  89.44;          1;       0;       1;         0.08;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2024-02;        2;      2;       0;   0.00; 100.00;  81.36;   0.00; 100.00;  81.36;          1;       0;       1;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2024-03;        2;      2;       0;   0.00; 100.00;  74.16;   0.00; 100.00;  74.16;          1;       0;       1;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+    @Test
+    void analyzePerformance12() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2024-03-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-28", "2"),
+                        new DateAmount("2023-03-31", "2"),
+                        new DateAmount("2023-04-30", "2"),
+                        new DateAmount("2023-05-31", "2"),
+                        new DateAmount("2023-06-30", "2"),
+                        new DateAmount("2023-07-31", "2"),
+                        new DateAmount("2023-08-31", "2"),
+                        new DateAmount("2023-09-30", "2"),
+                        new DateAmount("2023-10-31", "2"),
+                        new DateAmount("2023-11-30", "2"),
+                        new DateAmount("2023-12-31", "2"),
+                        new DateAmount("2024-01-31", "2"),
+                        new DateAmount("2024-02-29", "2"),
+                        new DateAmount("2024-03-31", "2")
+                ))
+                .incomes(List.of(
+                        new DateAmount("2023-12-31", "48"),
+                        new DateAmount("2024-01-13", "12")
+                ))
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .calculatePeriodIncome(true)
+                .calculateTrailingAvgIncome1Y(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          1;       0;       0;         0.00;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-02;        1;      2;       0; 100.00; 100.00; 100.00; 100.00; 100.00; 100.00;          1;       1;       1;         0.50;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-03;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.33;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-04;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.25;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-05;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.20;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-06;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.17;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-07;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.14;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-08;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.13;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-09;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.11;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-10;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.10;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-11;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.09;         0.00;       0;         0.00;     null;     null;     null;     null;      null
+                2023-12;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;       1;         0.08;         0.00;      48;         4.00;     null;     null;     null;     null;      null
+                2024-01;        2;      2;       0;   0.00; 100.00;  89.44;   0.00; 100.00;  89.44;          1;       0;       1;         0.08;         0.00;      12;         5.00;     null;     null;     null;     null;      null
+                2024-02;        2;      2;       0;   0.00; 100.00;  81.36;   0.00; 100.00;  81.36;          1;       0;       1;         0.00;         0.00;       0;         5.00;     null;     null;     null;     null;      null
+                2024-03;        2;      2;       0;   0.00; 100.00;  74.16;   0.00; 100.00;  74.16;          1;       0;       1;         0.00;         0.00;       0;         5.00;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+    @Test
+    void analyzePerformance13() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2024-03-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-28", "1.5"),
+                        new DateAmount("2023-03-31", "2.25"),
+                        new DateAmount("2023-04-30", "2.025"),
+                        new DateAmount("2023-05-31", "2"),
+                        new DateAmount("2023-06-30", "2"),
+                        new DateAmount("2023-07-31", "2"),
+                        new DateAmount("2023-08-31", "2"),
+                        new DateAmount("2023-09-30", "2"),
+                        new DateAmount("2023-10-31", "2"),
+                        new DateAmount("2023-11-30", "2"),
+                        new DateAmount("2023-12-31", "2"),
+                        new DateAmount("2024-01-31", "2"),
+                        new DateAmount("2024-02-29", "2"),
+                        new DateAmount("2024-03-31", "2")
+                ))
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .calculateTrailingTwr1Y(true)
+                .calculateTrailingTwr2Y(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   0.00;   0.00;   0.00;          1;       0;       0;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        1;    1.5;       0;  50.00;  50.00;  50.00;  50.00;  50.00;  50.00;          1;     0.5;     0.5;         0.25;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-03;      1.5;   2.25;       0;  50.00; 125.00; 125.00;  50.00; 125.00; 125.00;          1;    0.75;    1.25;         0.42;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-04;     2.25;  2.025;       0; -10.00; 102.50; 102.50; -10.00; 102.50; 102.50;          1;  -0.225;   1.025;         0.26;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-05;    2.025;      2;       0;  -1.23; 100.00; 100.00;  -1.23; 100.00; 100.00;          1;  -0.025;   1.000;         0.20;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-06;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.17;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-07;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.14;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-08;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.13;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-09;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.11;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-10;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.10;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-11;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.09;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-12;        2;      2;       0;   0.00; 100.00; 100.00;   0.00; 100.00; 100.00;          1;       0;   1.000;         0.08;         0.00;    null;         null;   100.00;     null;     null;     null;      null
+                2024-01;        2;      2;       0;   0.00; 100.00;  89.44;   0.00; 100.00;  89.44;          1;       0;   1.000;         0.08;         0.00;    null;         null;   100.00;     null;     null;     null;      null
+                2024-02;        2;      2;       0;   0.00; 100.00;  81.36;   0.00; 100.00;  81.36;          1;       0;   1.000;         0.04;         0.00;    null;         null;    33.33;     null;     null;     null;      null
+                2024-03;        2;      2;       0;   0.00; 100.00;  74.16;   0.00; 100.00;  74.16;          1;       0;   1.000;        -0.02;         0.00;    null;         null;   -11.11;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
+    @Test
+    void analyzePerformance14() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2025-01-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "1"),
+                        new DateAmount("2023-01-31", "1"),
+                        new DateAmount("2023-02-28", "1.5"),
+                        new DateAmount("2023-03-31", "2.25"),
+                        new DateAmount("2023-04-30", "2.025"),
+                        new DateAmount("2023-05-31", "2"),
+                        new DateAmount("2023-06-30", "2"),
+                        new DateAmount("2023-07-31", "2"),
+                        new DateAmount("2023-08-31", "2"),
+                        new DateAmount("2023-09-30", "2"),
+                        new DateAmount("2023-10-31", "2"),
+                        new DateAmount("2023-11-30", "2"),
+                        new DateAmount("2023-12-31", "2"),
+                        new DateAmount("2024-01-31", "2"),
+                        new DateAmount("2024-02-29", "2"),
+                        new DateAmount("2024-03-31", "2"),
+                        new DateAmount("2024-04-30", "2"),
+                        new DateAmount("2024-05-31", "2"),
+                        new DateAmount("2024-06-30", "2"),
+                        new DateAmount("2024-07-31", "2"),
+                        new DateAmount("2024-08-31", "2"),
+                        new DateAmount("2024-09-30", "2"),
+                        new DateAmount("2024-10-31", "2"),
+                        new DateAmount("2024-11-30", "2"),
+                        new DateAmount("2024-12-31", "2"),
+                        new DateAmount("2025-01-31", "2.2")
+                ))
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(false)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .calculateTrailingTwr1Y(true)
+                .calculateTrailingTwr2Y(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;        1;      1;       0;   0.00;   0.00;   0.00;   null;   0.00;   0.00;          1;       0;       0;         0.00;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-02;        1;    1.5;       0;  50.00;  50.00;  50.00;   null;  50.00;  50.00;          1;     0.5;     0.5;         0.25;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-03;      1.5;   2.25;       0;  50.00; 125.00; 125.00;   null; 125.00; 125.00;          1;    0.75;    1.25;         0.42;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-04;     2.25;  2.025;       0; -10.00; 102.50; 102.50;   null; 102.50; 102.50;          1;  -0.225;   1.025;         0.26;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-05;    2.025;      2;       0;  -1.23; 100.00; 100.00;   null; 100.00; 100.00;          1;  -0.025;   1.000;         0.20;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-06;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.17;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-07;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.14;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-08;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.13;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-09;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.11;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-10;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.10;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-11;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.09;         0.00;    null;         null;     null;     null;     null;     null;      null
+                2023-12;        2;      2;       0;   0.00; 100.00; 100.00;   null; 100.00; 100.00;          1;       0;   1.000;         0.08;         0.00;    null;         null;   100.00;     null;     null;     null;      null
+                2024-01;        2;      2;       0;   0.00; 100.00;  89.44;   null; 100.00;  89.44;          1;       0;   1.000;         0.08;         0.00;    null;         null;   100.00;     null;     null;     null;      null
+                2024-02;        2;      2;       0;   0.00; 100.00;  81.36;   null; 100.00;  81.36;          1;       0;   1.000;         0.04;         0.00;    null;         null;    33.33;     null;     null;     null;      null
+                2024-03;        2;      2;       0;   0.00; 100.00;  74.16;   null; 100.00;  74.16;          1;       0;   1.000;        -0.02;         0.00;    null;         null;   -11.11;     null;     null;     null;      null
+                2024-04;        2;      2;       0;   0.00; 100.00;  68.30;   null; 100.00;  68.30;          1;       0;   1.000;         0.00;         0.00;    null;         null;    -1.23;     null;     null;     null;      null
+                2024-05;        2;      2;       0;   0.00; 100.00;  63.13;   null; 100.00;  63.13;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-06;        2;      2;       0;   0.00; 100.00;  58.81;   null; 100.00;  58.81;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-07;        2;      2;       0;   0.00; 100.00;  54.92;   null; 100.00;  54.92;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-08;        2;      2;       0;   0.00; 100.00;  51.50;   null; 100.00;  51.50;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-09;        2;      2;       0;   0.00; 100.00;  48.58;   null; 100.00;  48.58;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-10;        2;      2;       0;   0.00; 100.00;  45.88;   null; 100.00;  45.88;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-11;        2;      2;       0;   0.00; 100.00;  43.54;   null; 100.00;  43.54;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;     null;     null;     null;      null
+                2024-12;        2;      2;       0;   0.00; 100.00;  41.42;   null; 100.00;  41.42;          1;       0;   1.000;         0.00;         0.00;    null;         null;     0.00;    41.42;     null;     null;      null
+                2025-01;        2;    2.2;       0;  10.00; 120.00;  45.96;   null; 120.00;  45.96;          1;     0.2;   1.200;         0.02;         0.00;    null;         null;    10.00;    48.32;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
     }
 
 }

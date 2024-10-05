@@ -3,6 +3,7 @@ package com.brinvex.fintracker.performancecalc.impl.service;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
+import com.brinvex.util.java.CollectionUtil;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -13,6 +14,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 
+import static com.brinvex.util.java.CollectionUtil.rangeSafeHeadMap;
+import static com.brinvex.util.java.CollectionUtil.rangeSafeTailMap;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
@@ -86,11 +89,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             Entry<LocalDate, BigDecimal> firstFlowEntry = flows.firstEntry();
             if (firstFlowEntry != null && firstFlowEntry.getKey().isEqual(startDateIncl)) {
                 startAssetValueExcl = startAssetValueExcl.add(firstFlowEntry.getValue());
-                if (flows.size() == 1) {
-                    flows = Collections.emptySortedMap();
-                } else {
-                    flows = flows.tailMap(startDateIncl.plusDays(1));
-                }
+                flows = rangeSafeTailMap(flows, startDateIncl.plusDays(1));
             }
         }
 
@@ -152,7 +151,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
                 subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
                 if (i < periodCount) {
                     flow = flows.firstEntry().getValue();
-                    flows = flows.tailMap(subPeriodStartDateIncl.plusDays(1));
+                    flows = rangeSafeTailMap(flows, subPeriodStartDateIncl.plusDays(1));
                 }
             }
         }
@@ -175,7 +174,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             Entry<LocalDate, BigDecimal> lastFlowEntry = flows.lastEntry();
             if (lastFlowEntry != null && lastFlowEntry.getKey().isEqual(endDateIncl)) {
                 endAssetValueIncl = endAssetValueIncl.subtract(lastFlowEntry.getValue());
-                flows = flows.headMap(endDateIncl);
+                flows = rangeSafeHeadMap(flows, endDateIncl);
             }
         }
 
@@ -240,7 +239,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             {
                 subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
                 if (i < periodCount) {
-                    flows = flows.tailMap(subPeriodStartDateIncl.plusDays(1));
+                    flows = rangeSafeTailMap(flows, subPeriodStartDateIncl.plusDays(1));
                 }
             }
         }
