@@ -137,7 +137,7 @@ you can include only the ``performance-api`` and ``performance-impl`` dependenci
 If you need integration with IBKR, import the ``connector-ibkr-api`` and ``connector-ibkr-impl`` dependencies.
 
     <properties>
-         <brinvex-fintracker.version>0.0.23</brinvex-fintracker.version>
+         <brinvex-fintracker.version>0.0.24</brinvex-fintracker.version>
     </properties>
     
     <repository>
