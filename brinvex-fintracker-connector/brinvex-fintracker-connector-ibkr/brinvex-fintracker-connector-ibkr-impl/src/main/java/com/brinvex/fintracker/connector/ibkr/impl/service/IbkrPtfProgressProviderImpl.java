@@ -149,6 +149,7 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
             throw new IllegalStateException(
                     "Missing PtfProgress data: accountId=%s, fromDayIncl=%s, toDayIncl=%s, credentials=%s");
         }
+        trans.sort(comparing(FinTransaction::date));
         PtfProgress resultProgress = new PtfProgress(trans, new ArrayList<>(navs.values()), ccy);
 
         for (FinTransaction finTransaction : resultProgress.transactions()) {
