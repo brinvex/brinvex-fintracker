@@ -25,10 +25,10 @@ class IbkrDmsTest extends BaseIbkrTest {
     @SuppressWarnings("SequencedCollectionMethodCanBeUsed")
     @Test
     void dmsConsistency() {
-        String dmsWorkspace = "dms-tmp1";
+        String dmsWorkspace = "Ibkr-dms-tmp1";
         IbkrModule ibkrModule = newIbkrModule(dmsWorkspace);
         DmsFactory dmsFactory = moduleTestSupport.dmsFactory();
-        Dms dms = dmsFactory.getDms(IbkrModule.class.getSimpleName() + "/" + dmsWorkspace);
+        Dms dms = dmsFactory.getDms(dmsWorkspace);
         dms.resetWorkspace();
         dms.purgeWorkspace(LocalDateTime.now());
         IbkrDms ibkrDms = ibkrModule.dms();

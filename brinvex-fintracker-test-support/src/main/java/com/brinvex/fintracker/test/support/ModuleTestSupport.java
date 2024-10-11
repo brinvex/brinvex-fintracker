@@ -58,17 +58,7 @@ public class ModuleTestSupport {
 
     public DmsFactory dmsFactory() {
         if (moduleDmsFactory == null) {
-            Path dmsBasePath = testDataFolder().resolve("dms");
-            if (!Files.exists(dmsBasePath)) {
-                LOG.debug("Creating test DMS: {}", dmsBasePath);
-                try {
-                    Files.createDirectories(dmsBasePath);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            } else {
-                LOG.debug("Going to use existing test DMS: {}", dmsBasePath);
-            }
+            Path dmsBasePath = testDataFolder();
             moduleDmsFactory = DmsFactory.createFilesystemDmsFactory(dmsBasePath);
         }
         return moduleDmsFactory;

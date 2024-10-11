@@ -27,7 +27,7 @@ class IbkrMapperTest extends BaseIbkrTest {
     @EnabledIf("account2IsNotNull")
     @Test
     void transactionMapping() {
-        IbkrModule ibkrModule = newIbkrModule("dms-stable");
+        IbkrModule ibkrModule = newIbkrModule("Ibkr-dms-stable");
         IbkrStatementParser parser = ibkrModule.statementParser();
         IbkrStatementMerger merger = ibkrModule.statementMerger();
         IbkrFinTransactionMapper finTranMapper = ibkrModule.finTransactionMapper();

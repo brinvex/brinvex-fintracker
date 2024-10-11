@@ -34,7 +34,7 @@ public class FinTrackerModuleContextImpl implements FinTrackerModuleContext {
     ) {
         this.sharedContext = sharedContext;
         this.moduleType = moduleType;
-        this.moduleName = moduleType.getSimpleName();
+        this.moduleName = moduleType.getSimpleName().replace("Module", "");
     }
 
     @Override
@@ -70,8 +70,8 @@ public class FinTrackerModuleContextImpl implements FinTrackerModuleContext {
         if (dms == null) {
             synchronized (this) {
                 if (dms == null) {
-                    String dmsWorkspace = getProperty(FinTrackerModule.PropKey.dmsWorkspace, "dms");
-                    dms = sharedContext.dmsFactory().getDms(moduleName + "/" + dmsWorkspace);
+                    String dmsWorkspace = getProperty(FinTrackerModule.PropKey.dmsWorkspace, moduleName + "-dms");
+                    dms = sharedContext.dmsFactory().getDms(dmsWorkspace);
                 }
             }
         }

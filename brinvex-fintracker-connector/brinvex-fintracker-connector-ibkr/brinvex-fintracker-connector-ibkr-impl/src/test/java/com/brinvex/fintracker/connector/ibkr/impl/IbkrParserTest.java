@@ -37,7 +37,7 @@ class IbkrParserTest extends BaseIbkrTest {
     @EnabledIf("account1IsNotNull")
     @Test
     void parseActivity() {
-        IbkrModule ibkrModule = newIbkrModule("dms-stable");
+        IbkrModule ibkrModule = newIbkrModule("Ibkr-dms-stable");
         IbkrDms dms = ibkrModule.dms();
         List<ActivityDocKey> docKeys = dms.getActivityDocKeys(account1.accountId(), null, null);
         assertFalse(docKeys.isEmpty());
@@ -65,7 +65,7 @@ class IbkrParserTest extends BaseIbkrTest {
     @EnabledIf("account1IsNotNull")
     @Test
     void parseTradeConfirm() {
-        IbkrModule ibkrModule = newIbkrModule("dms-stable-20240418");
+        IbkrModule ibkrModule = newIbkrModule("Ibkr-dms-stable-20240418");
         IbkrDms dms = ibkrModule.dms();
         List<TradeConfirmDocKey> docKeys = dms.getTradeConfirmDocKeys(account1.accountId(), null, null);
         assertFalse(docKeys.isEmpty());
@@ -96,7 +96,7 @@ class IbkrParserTest extends BaseIbkrTest {
     @EnabledIf("account1IsNotNull")
     @Test
     void parseEquitySummaries() {
-        IbkrModule ibkrModule = newIbkrModule("dms-stable");
+        IbkrModule ibkrModule = newIbkrModule("Ibkr-dms-stable");
         IbkrDms dms = ibkrModule.dms();
         IbkrStatementParser parser = ibkrModule.statementParser();
         ActivityDocKey docKey = new ActivityDocKey(account1.accountId(), parse("2023-01-23"), parse("2024-01-23"));

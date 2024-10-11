@@ -28,7 +28,7 @@ class IbkrPtfProgressOnlineTest extends BaseIbkrTest {
     @EnabledIfSystemProperty(named = "enableLongRunningTests", matches = "true")
     @Test
     void portfolioProgress() {
-        IbkrModule ibkrModule = newIbkrModule("dms-online1");
+        IbkrModule ibkrModule = newIbkrModule("Ibkr-dms-online1");
         IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
 
         SimplePtf ptf;
