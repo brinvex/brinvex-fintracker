@@ -172,6 +172,17 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
                             .interestAccruals(getAttrBigDecimal(e, EquitySummaryQN.interestAccruals))
                             .total(getAttrBigDecimal(e, EquitySummaryQN.total))
                             .build());
+                    case "Transfer" -> {
+                        AssetCategory assetCat = parseEnum(AssetCategory::fromValue, getAttrValue(e, TransferQN.assetCategory));
+                        String type = getAttrValue(e, TransferQN.type);
+                        if (assetCat.equals(AssetCategory.CASH) && type.equals("INTERNAL")) {
+                            continue;
+                        }
+                        if (assetCat.equals(AssetCategory.STK) && type.equals("INTERCOMPANY")) {
+                            continue;
+                        }
+                        throw new IllegalStateException("Unsupported transfer: %s, %s".formatted(assetCat, type));
+                    }
                 }
             }
         } catch (XMLStreamException e) {
@@ -414,6 +425,11 @@ public class IbkrStatementParserImpl implements IbkrStatementParser {
         static final QName dividendAccruals = new QName("dividendAccruals");
         static final QName interestAccruals = new QName("interestAccruals");
         static final QName total = new QName("total");
+    }
+
+    private static class TransferQN {
+        static final QName assetCategory = new QName("assetCategory");
+        static final QName type = new QName("type");
     }
 
 

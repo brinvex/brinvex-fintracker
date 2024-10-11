@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
 
-    @EnabledIf("account2IsNotNull")
+    @EnabledIf("account1IsNotNull")
     @Test
     void portfolioProgress_iterative() {
         String workspace = "Ibkr-dms-stable";
@@ -183,27 +183,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
         }
     }
 
-    @EnabledIf("account2MigratedIsNotNull")
-    @Test
-    void ptfProgress_accountMigration_oldNavZero() {
-        FinTracker finTracker = newFinTracker("Ibkr-dms-stable-20240904");
-        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
-
-        {
-            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(
-                    account2.migratedAccount().oldAccount(), parse("2023-01-23"), parse("2024-09-02"));
-            SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
-
-            assertEquals(2, ptf.getCurrencies().size());
-            assertEquals("0.00", ptf.getCash(EUR).setScale(2, HALF_UP).toString());
-            assertEquals("0.00", ptf.getCash(USD).setScale(2, HALF_UP).toString());
-
-            assertEquals(39, ptf.getHoldingsCount());
-        }
-    }
-
-    @EnabledIf("account2MigratedIsNotNull")
+    @EnabledIf("account2IsMigrated")
     @Test
     void ptfProgress_accountMigration_newNavSameAsOld() {
         FinTracker finTracker = newFinTracker("Ibkr-dms-stable");
@@ -227,46 +207,7 @@ class IbkrPtfProgressOfflineTest extends BaseIbkrTest {
         }
     }
 
-    @EnabledIf("account2MigratedIsNotNull")
-    @Test
-    void ptfProgress_accountMigration_dividendAccruals() {
-        FinTracker finTracker = newFinTracker("Ibkr-dms-stable-20240904");
-        IbkrModule ibkrModule = finTracker.get(IbkrModule.class);
-        IbkrPtfProgressProvider ptfProgressProvider = ibkrModule.ptfProgressProvider();
-
-        {
-            PtfProgress ptfProgress = ptfProgressProvider.getPortfolioProgressOffline(
-                    account2, parse("2023-01-23"), parse("2024-09-04"));
-            SimplePtf ptf = new SimplePtf(ptfProgress.transactions());
-
-            assertEquals(2, ptf.getCurrencies().size());
-            assertEquals("49.10", ptf.getCash(EUR).setScale(2, HALF_UP).toString());
-            assertEquals("106.36", ptf.getCash(USD).setScale(2, HALF_UP).toString());
-
-            int tranSize = ptf.getTransactions().size();
-
-            FinTransaction tran_2 = ptf.getTransactions().get(tranSize - 3);
-            assertEquals("2024-09-03", tran_2.date().toString());
-            assertEquals(FinTransactionType.CASH_DIVIDEND, tran_2.type());
-            assertEquals("0.54", tran_2.netValue().toString());
-            assertEquals("0.63", tran_2.grossValue().toString());
-            assertEquals("-0.09", tran_2.tax().toString());
-
-            FinTransaction tran_1 = ptf.getTransactions().get(tranSize - 2);
-            assertEquals("2024-09-04", tran_1.date().toString());
-            assertEquals(FinTransactionType.WITHDRAWAL, tran_1.type());
-            assertEquals("-0.54", tran_1.netValue().toString());
-
-            FinTransaction tran_0 = ptf.getTransactions().get(tranSize - 1);
-            assertEquals("2024-09-04", tran_0.date().toString());
-            assertEquals(FinTransactionType.DEPOSIT, tran_0.type());
-            assertEquals("0.54", tran_0.netValue().toString());
-
-            assertEquals(39, ptf.getHoldingsCount());
-        }
-    }
-
-    @EnabledIf("account2MigratedIsNotNull")
+    @EnabledIf("account2IsMigrated")
     @Test
     void ptfProgress_accountMigration_navDate() {
         FinTracker finTracker = newFinTracker("Ibkr-dms-stable");

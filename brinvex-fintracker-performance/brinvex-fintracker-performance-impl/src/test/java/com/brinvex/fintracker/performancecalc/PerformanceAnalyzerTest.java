@@ -2,11 +2,14 @@ package com.brinvex.fintracker.performancecalc;
 
 import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.core.api.model.general.DateAmount;
+import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
 import com.brinvex.fintracker.performancecalc.api.PerformanceModule;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysis;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysisRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceAnalyzer;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.LinkedModifiedDietzTwrCalculator;
+import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.brinvex.fintracker.core.api.model.general.PeriodUnit.MONTH;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
 import static com.brinvex.fintracker.test.support.AssertionUtil.assertEqualsWithMultilineMsg;
 import static com.brinvex.fintracker.test.support.CollectionStringUtil.collectionToGridString;
@@ -79,6 +83,44 @@ public class PerformanceAnalyzerTest {
                 )
         );
     }
+
+    @Test
+    void readmeExample() {
+        List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2023-03-31"))
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "100000"),
+                        new DateAmount("2023-01-31", "98000"),
+                        new DateAmount("2023-02-28", "117000"),
+                        new DateAmount("2023-03-31", "120000")
+                ))
+                .flows(List.of(
+                        new DateAmount("2023-01-20", "2000"),
+                        new DateAmount("2023-02-15", "1000"),
+                        new DateAmount("2023-02-07", "-1500")
+                ))
+                .flowTiming(BEGINNING_OF_DAY)
+                .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+                .mwrCalculatorType(ModifiedDietzMwrCalculator.class)
+                .resultPeriodUnit(MONTH)
+                .resultRatesInPercent(true)
+                .resultScale(2)
+                .calculateMwr(true)
+                .calculatePeriodMwr(true)
+                .calculateTrailingAvgProfit1Y(true)
+                .calculateTrailingAvgFlow1Y(true)
+                .build());
+        String expected = """
+                period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; prdMwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+               2023-01;   100000;  98000;    2000;  -3.97;  -3.97;  -3.97;  -3.97;  -3.97;  -3.97;     102000;   -4000;   -4000;     -4000.00;      2000.00;    null;         null;     null;     null;     null;     null;      null
+               2023-02;    98000; 117000;    -500;  20.04;  15.27;  15.27;  20.04;  15.34;  15.34;     101500;   19500;   15500;      7750.00;       750.00;    null;         null;     null;     null;     null;     null;      null
+               2023-03;   117000; 120000;       0;   2.56;  18.23;  18.23;   2.56;  18.28;  18.28;     101500;    3000;   18500;      6166.67;       500.00;    null;         null;     null;     null;     null;     null;      null
+               """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
 
     @Test
     void analyzePerformance1() {

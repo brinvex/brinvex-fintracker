@@ -75,9 +75,9 @@ class IbkrPtfProgressOnlineTest extends BaseIbkrTest {
             );
             ptf = new SimplePtf(ptfProgress.transactions());
             assertEquals(2, ptf.getCurrencies().size());
+            assertEquals("35", ptf.getHoldingQty(DE, "CSPX").toString());
             assertEquals("59.64", ptf.getCash("EUR").setScale(2, HALF_UP).toPlainString());
             assertEquals("517.29", ptf.getCash("USD").setScale(2, HALF_UP).toPlainString());
-            assertEquals("35", ptf.getHoldingQty(DE, "CSPX").toString());
             assertEquals("5108.86", ptfProgress.netAssetValues().getLast().amount().remainder(new BigDecimal("10000")).setScale(2, HALF_UP).toPlainString());
         }
         {

@@ -1,12 +1,5 @@
 package com.brinvex.fintracker.connector.ibkr.impl.service;
 
-import com.brinvex.fintracker.core.api.exception.AssistanceRequiredException;
-import com.brinvex.fintracker.core.api.facade.ValidatorFacade;
-import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
-import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
-import com.brinvex.fintracker.core.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
-import com.brinvex.fintracker.core.api.model.general.DateAmount;
-import com.brinvex.fintracker.core.api.provider.PtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrAccount.Credentials;
 import com.brinvex.fintracker.connector.ibkr.api.model.IbkrDocKey.ActivityDocKey;
@@ -20,6 +13,13 @@ import com.brinvex.fintracker.connector.ibkr.api.service.IbkrFinTransactionMappe
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrPtfProgressProvider;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementMerger;
 import com.brinvex.fintracker.connector.ibkr.api.service.IbkrStatementParser;
+import com.brinvex.fintracker.core.api.exception.AssistanceRequiredException;
+import com.brinvex.fintracker.core.api.facade.ValidatorFacade;
+import com.brinvex.fintracker.core.api.model.domain.FinTransaction;
+import com.brinvex.fintracker.core.api.model.domain.PtfProgress;
+import com.brinvex.fintracker.core.api.model.domain.constraints.fintransaction.FinTransactionConstraints;
+import com.brinvex.fintracker.core.api.model.general.DateAmount;
+import com.brinvex.fintracker.core.api.provider.PtfProgressProvider;
 import com.brinvex.util.java.validation.Assert;
 import jakarta.validation.ConstraintViolation;
 import org.slf4j.Logger;
@@ -30,10 +30,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -106,74 +108,48 @@ public class IbkrPtfProgressProviderImpl implements IbkrPtfProgressProvider, Ptf
 
     @Override
     public PtfProgress getPortfolioProgressOffline(IbkrAccount ibkrAccount, LocalDate fromDateIncl, LocalDate toDateIncl) {
-        return getPtfProgress(ibkrAccount, fromDateIncl, toDateIncl, null, false, 0);
+        return getPtfProgress(ibkrAccount, fromDateIncl, toDateIncl, null, false);
     }
 
     @Override
     public PtfProgress getPortfolioProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance) {
-        return getPtfProgress(account, fromDateIncl, toDateIncl, staleTolerance, true, 0);
+        return getPtfProgress(account, fromDateIncl, toDateIncl, staleTolerance, true);
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    private PtfProgress getPtfProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online, int recursionDepth) {
-        LOG.debug("getPtfProgress({}, {}-{}, staleTolerance={}, online={}, recursionDepth={})", account, fromDateIncl, toDateIncl, staleTolerance, online, recursionDepth);
-        Assert.isTrue(recursionDepth < 10, () -> "getPtfProgress - exceeded recursionDepth %s, %s, %s-%s, staleTolerance=%s, online=%s)"
-                .formatted(recursionDepth, account, fromDateIncl, toDateIncl, staleTolerance, online));
-        IbkrAccount.MigratedAccount migratedAccount = account.migratedAccount();
+    private PtfProgress getPtfProgress(IbkrAccount account, LocalDate fromDateIncl, LocalDate toDateIncl, Duration staleTolerance, boolean online) {
+        LOG.debug("getPtfProgress({}, {}-{}, staleTolerance={}, online={})", account, fromDateIncl, toDateIncl, staleTolerance, online);
 
-        PtfProgress resultProgress;
-        if (migratedAccount == null) {
-            resultProgress = getSinglePtfProgress(account.accountId(), account.credentials(), fromDateIncl, toDateIncl, staleTolerance, online);
-        } else {
-            PtfProgress migratedProgress;
-            PtfProgress progress;
+        List<FinTransaction> trans = new ArrayList<>();
+        SequencedMap<LocalDate, DateAmount> navs = new LinkedHashMap<>();
+        String ccy = null;
+        for (IbkrAccount.IdAccount idAccount : account.allIdAccountsAsc()) {
+            LocalDate idValidFrom = idAccount.idValidFromIncl();
+            LocalDate idValidToIncl = idAccount.idValidToIncl();
+            LocalDate progressFromDateIncl = maxDate(fromDateIncl, idValidFrom);
+            LocalDate progressToDateIncl = idValidToIncl == null ? toDateIncl : minDate(toDateIncl, idValidToIncl);
 
-            LocalDate migrationFromIncl = migratedAccount.migrationFromIncl();
-            LocalDate migrationToIncl = migratedAccount.migrationToIncl();
-            LocalDate oldFromIncl = fromDateIncl;
-            LocalDate oldToIncl = minDate(toDateIncl, migrationToIncl);
-            LocalDate newFromIncl = maxDate(fromDateIncl, migrationFromIncl);
-            LocalDate newToIncl = toDateIncl;
-            if (!oldFromIncl.isAfter(oldToIncl)) {
-                migratedProgress = getPtfProgress(migratedAccount.oldAccount(), oldFromIncl, oldToIncl, staleTolerance, online, recursionDepth + 1);
-            } else {
-                migratedProgress = null;
-            }
-            if (!newFromIncl.isAfter(newToIncl)) {
-                progress = getSinglePtfProgress(account.accountId(), account.credentials(), newFromIncl, newToIncl, staleTolerance, online);
-            } else {
-                progress = null;
-            }
-            if (progress != null) {
-                if (migratedProgress != null) {
-                    String resultCcy = progress.ccy();
-                    Assert.equal(resultCcy, migratedProgress.ccy());
-                    List<FinTransaction> resultTrans = Stream
-                            .concat(
-                                    migratedProgress.transactions().stream(),
-                                    progress.transactions().stream())
-                            .sorted(comparing(FinTransaction::date))
-                            .toList();
-                    List<DateAmount> resultNavs = Stream
-                            .concat(
-                                    migratedProgress.netAssetValues().stream().filter(e -> !e.date().isAfter(migrationFromIncl)),
-                                    progress.netAssetValues().stream().filter(e -> e.date().isAfter(migrationFromIncl)))
-                            .sorted(comparing(DateAmount::date))
-                            .toList();
-                    resultProgress = new PtfProgress(resultTrans, resultNavs, resultCcy);
-                } else {
-                    resultProgress = progress;
+            if (!progressFromDateIncl.isAfter(progressToDateIncl)) {
+                PtfProgress singlePtfProgress = getSinglePtfProgress(
+                        idAccount.accountId(), idAccount.credentials(), progressFromDateIncl, progressToDateIncl, staleTolerance, online
+                );
+                if (singlePtfProgress != null) {
+                    if (ccy == null) {
+                        ccy = singlePtfProgress.ccy();
+                    } else {
+                        Assert.isTrue(ccy.equals(singlePtfProgress.ccy()));
+                    }
+                    trans.addAll(singlePtfProgress.transactions());
+                    for (DateAmount e : singlePtfProgress.netAssetValues()) {
+                        navs.put(e.date(), e);
+                    }
                 }
-            } else {
-                resultProgress = migratedProgress;
             }
         }
-
-        if (resultProgress == null) {
+        if (navs.isEmpty()) {
             throw new IllegalStateException(
-                    "Missing PtfProgress data: accountId=%s, fromDayIncl=%s, toDayIncl=%s, migratedAccount=%s, credentials=%s"
-                            .formatted(account.accountId(), fromDateIncl, toDateIncl, account.migratedAccount(), account.credentials() == null));
+                    "Missing PtfProgress data: accountId=%s, fromDayIncl=%s, toDayIncl=%s, credentials=%s");
         }
+        PtfProgress resultProgress = new PtfProgress(trans, new ArrayList<>(navs.values()), ccy);
 
         for (FinTransaction finTransaction : resultProgress.transactions()) {
             Set<ConstraintViolation<FinTransactionConstraints>> violations = validatorFacade.validate(FinTransactionConstraints.of(finTransaction));

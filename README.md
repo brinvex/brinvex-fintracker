@@ -103,6 +103,57 @@ https://en.wikipedia.org/wiki/Modified_Dietz_method
 https://en.wikipedia.org/wiki/Time-weighted_return  
 https://www.gipsstandards.org  
 
+### Investment Performance Analyzer
+The Investment Performance Analyzer is a powerful tool designed to provide detailed 
+evaluations of an investment's performance over specified periods.
+````java
+PerformanceAnalyzer perfAnalyzer = finTracker.get(PerformanceModule.class).performanceAnalyzer();
+List<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+    .startDateIncl(parse("2023-01-01"))
+    .endDateIncl(parse("2023-03-31"))
+    .assetValues(List.of(
+            new DateAmount("2022-12-31", "100000"),
+            new DateAmount("2023-01-31", "98000"),
+            new DateAmount("2023-02-28", "117000"),
+            new DateAmount("2023-03-31", "120000")
+    ))
+    .flows(List.of(
+            new DateAmount("2023-01-20", "2000"),
+            new DateAmount("2023-02-15", "1000"),
+            new DateAmount("2023-02-07", "-1500")
+    ))
+    .flowTiming(BEGINNING_OF_DAY)
+    .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+    .mwrCalculatorType(ModifiedDietzMwrCalculator.class)
+    .resultPeriodUnit(MONTH)
+    .resultRatesInPercent(true)
+    .resultScale(2)
+    .calculateMwr(true)
+    .calculatePeriodMwr(true)
+    .calculateTrailingAvgProfit1Y(true)
+    .calculateTrailingAvgFlow1Y(true)
+    .build());
+````
+
+|                        |  2023-01 | 2023-02 | 2023-03 |
+|------------------------|---------:|--------:|--------:|
+| Period Start Value     |   100000 |   98000 |  117000 |
+| Period End Value       |    98000 |  117000 |  120000 |
+| Period Flow            |     2000 |    -500 |       0 |
+| Period TWR             |   -3.97% |  20.04% |   2.56% |
+| Cumulative TWR         |   -3.97% |  15.27% |  18.23% |
+| **Annualized TWR**     |   -3.97% |  15.27% |  18.23% |
+| Period MWR             |   -3.97% |  20.04% |   2.56% |
+| Cumulative MWR         |   -3.97% |  15.34% |  18.28% |
+| **Annualized MWR**     |   -3.97% |  15.34% |  18.28% |
+| Total Contribution     |   102000 |  101500 |  101500 |
+| Period Profit          |    -4000 |   19500 |    3000 |
+| Total Profit           |    -4000 |   15500 |   18500 |
+| Trailing Avg Profit 1Y | -4000.00 | 7750.00 | 6166.67 |
+| Trailing Avg Flow 1Y   |  2000.00 |  750.00 |  500.00 |
+
+
+
 ### Account Statement Management
 
 #### Account Statement Online Fetching
@@ -205,10 +256,12 @@ Users should expect this one-business-day period for updates to be fully reflect
 
 #### IBKR - Account ID change
 On August 1, 2024, Interactive Brokers Ireland Limited (IBIE) and 
-Interactive Brokers Central Europe Zrt. (IBCE) merged into a single entity, 
-with all former IBCE clients now serviced by IBIE. 
-As a result, former IBCE clients will be assigned new Account IDs under IBIE.  
+Interactive Brokers Central Europe Zrt. (IBCE) merged into a single entity. 
+All former IBCE clients were moved to IBIE, and they got new Account IDs under IBIE.  
 https://www.ibkrguides.com/kb/merger-of-two-eu-broker-dealers.htm
-
-To manage such transitions, we utilize the recursive structure ````IbkrAccount.Migration````.
+If such a scenario occurs again, be aware that IBKR reports may appear 
+inconsistent and unstable for a period. It is advisable to wait a few days 
+before using them, allowing time for reports of old accounts to stabilize 
+and new account reports to include all important data.
+In 2024, a 14-day waiting period was sufficient for the reports to consolidate.
 

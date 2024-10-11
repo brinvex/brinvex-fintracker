@@ -28,8 +28,8 @@ abstract class BaseIbkrTest {
         return account2 != null;
     }
 
-    public boolean account2MigratedIsNotNull() {
-        return account2 != null && account2.migratedAccount() != null;
+    public boolean account2IsMigrated() {
+        return account2 != null && !account2.oldIdAccounts().isEmpty();
     }
 
     public boolean account2CredentialsIsNotNull() {
