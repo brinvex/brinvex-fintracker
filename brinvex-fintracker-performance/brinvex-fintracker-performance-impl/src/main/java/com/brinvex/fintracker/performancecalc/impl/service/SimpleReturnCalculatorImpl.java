@@ -28,16 +28,12 @@ public class SimpleReturnCalculatorImpl extends BaseCalculatorImpl implements Pe
     ) {
         BigDecimal cumulReturn;
         if (startAssetValueExcl.compareTo(ZERO) == 0) {
-            if (endAssetValueIncl.compareTo(ZERO) != 0) {
-                throw new IllegalArgumentException((
-                        "if startAssetValueExcl is zero, then the endAssetValueIncl must be zero, given: %s")
-                        .formatted(endAssetValueIncl));
-            }
-            cumulReturn = ZERO;
+            throw new IllegalArgumentException("startAssetValueExcl must not be zero");
         } else if (endAssetValueIncl.compareTo(ZERO) == 0) {
             cumulReturn = ONE.negate();
         } else {
-            cumulReturn = endAssetValueIncl.subtract(startAssetValueExcl).divide(startAssetValueExcl, calcScale, roundingMode);
+            BigDecimal gain = endAssetValueIncl.subtract(startAssetValueExcl);
+            cumulReturn = gain.divide(startAssetValueExcl, calcScale, roundingMode);
         }
 
         return cumulReturn;

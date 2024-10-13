@@ -3,13 +3,11 @@ package com.brinvex.fintracker.performancecalc.impl.service;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
-import com.brinvex.util.java.CollectionUtil;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -125,14 +123,10 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             BigDecimal subPeriodStartValueWithFlow = subPeriodStartValue.add(flow);
             BigDecimal periodFactor;
             if (subPeriodStartValueWithFlow.compareTo(ZERO) == 0) {
-                if (subPeriodEndValue.compareTo(ZERO) == 0) {
-                    periodFactor = ONE;
-                } else {
-                    throw new IllegalArgumentException((
-                            "if subPeriodStartValueWithFlow is zero, then subPeriodEndValue must be zero; " +
-                            "given: subPeriodStartValueWithFlow=%s, subPeriodEndValue=%s, subPeriodStartDateExcl=%s, subPeriodEndDateIncl=%s")
-                            .formatted(subPeriodStartValueWithFlow, subPeriodEndValue, subPeriodStartDateExcl, subPeriodEndDateIncl));
-                }
+                throw new IllegalArgumentException((
+                        "subPeriodStartValueWithFlow must not be zero; " +
+                        "given: subPeriodEndValue=%s, subPeriodStartDateExcl=%s, subPeriodEndDateIncl=%s")
+                        .formatted(subPeriodEndValue, subPeriodStartDateExcl, subPeriodEndDateIncl));
             } else {
                 periodFactor = subPeriodEndValue.divide(subPeriodStartValueWithFlow, calcScale, roundingMode);
                 int periodFactorSignum = periodFactor.signum();
@@ -214,14 +208,10 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
 
             BigDecimal periodFactor;
             if (subPeriodStartValue.compareTo(ZERO) == 0) {
-                if (subPeriodEndValueWithoutFlow.compareTo(ZERO) == 0) {
-                    periodFactor = ONE;
-                } else {
-                    throw new IllegalArgumentException((
-                            "if subPeriodStartValue is zero, then subPeriodEndValueWithoutFlow must be zero; " +
-                            "given: subPeriodStartValue=%s, subPeriodEndValueWithoutFlow=%s, subPeriodStartDateExcl=%s, subPeriodEndDateIncl=%s")
-                            .formatted(subPeriodStartValue, subPeriodEndValueWithoutFlow, subPeriodStartDateExcl, subPeriodEndDateIncl));
-                }
+                throw new IllegalArgumentException((
+                        "subPeriodStartValue must not be zero; " +
+                        "given: subPeriodEndValueWithoutFlow=%s, subPeriodStartDateExcl=%s, subPeriodEndDateIncl=%s")
+                        .formatted(subPeriodEndValueWithoutFlow, subPeriodStartDateExcl, subPeriodEndDateIncl));
             } else {
                 periodFactor = subPeriodEndValueWithoutFlow.divide(subPeriodStartValue, calcScale, roundingMode);
                 int periodFactorSignum = periodFactor.signum();

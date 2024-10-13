@@ -9,6 +9,7 @@ import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest.PerfCalc
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.LinkedModifiedDietzTwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TrueTwrCalculator;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.END_OF
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PerformanceCalculatorTest {
@@ -77,8 +79,9 @@ class PerformanceCalculatorTest {
                 .flowTiming(BEGINNING_OF_DAY)
                 .annualization(DO_NOT_ANNUALIZE);
 
-        assertEquals("0.000000", modifiedDietzMwrCalculator.calculateReturn(mwrReq1.copy().build()).toPlainString());
-        assertEquals("0.000000", trueTwrCalculator.calculateReturn(mwrReq1.copy().build()).toPlainString());
+        assertThrows(IllegalArgumentException.class,  () -> modifiedDietzMwrCalculator.calculateReturn(mwrReq1.copy().build()));
+        assertThrows(IllegalArgumentException.class,  () -> trueTwrCalculator.calculateReturn(mwrReq1.copy().build()));
+        assertThrows(IllegalArgumentException.class,  () -> linkedModifiedDietzTwrCalculator.calculateReturn(mwrReq1.copy().build()));
     }
 
     @Test
@@ -148,7 +151,7 @@ class PerformanceCalculatorTest {
     @Test
     void perfCalc7() {
         PerfCalcRequestBuilder req = PerfCalcRequest.builder()
-                .startDateIncl(parse("2021-01-01"))
+                .startDateIncl(parse("2022-01-01"))
                 .endDateIncl(parse("2022-12-31"))
                 .startAssetValueExcl(new BigDecimal("0"))
                 .endAssetValueIncl(new BigDecimal("102"))
@@ -161,18 +164,18 @@ class PerformanceCalculatorTest {
 
         assertEquals("0.020000", trueTwrCalculator.calculateReturn(req.copy()
                 .annualization(DO_NOT_ANNUALIZE).build()).toPlainString());
-        assertEquals("0.009950", trueTwrCalculator.calculateReturn(req.copy()
+        assertEquals("0.020000", trueTwrCalculator.calculateReturn(req.copy()
                 .annualization(ANNUALIZE).build()).toPlainString());
         assertEquals("0.020000", modifiedDietzMwrCalculator.calculateReturn(req.copy()
                 .annualization(DO_NOT_ANNUALIZE).build()).toPlainString());
-        assertEquals("0.009950", modifiedDietzMwrCalculator.calculateReturn(req.copy()
+        assertEquals("0.020000", modifiedDietzMwrCalculator.calculateReturn(req.copy()
                 .annualization(ANNUALIZE).build()).toPlainString());
     }
 
     @Test
     void perfCalc8() {
         PerfCalcRequestBuilder req1 = PerfCalcRequest.builder()
-                .startDateIncl(parse("2021-01-01"))
+                .startDateIncl(parse("2022-01-01"))
                 .endDateIncl(parse("2022-12-31"))
                 .startAssetValueExcl(new BigDecimal("0"))
                 .endAssetValueIncl(new BigDecimal("102"))
@@ -181,11 +184,13 @@ class PerformanceCalculatorTest {
                 .assetValues(List.of(
                         new DateAmount(parse("2021-12-31"), new BigDecimal("0"))))
                 .flowTiming(BEGINNING_OF_DAY)
-                .annualization(DO_NOT_ANNUALIZE);
+                .annualization(DO_NOT_ANNUALIZE)
+                .resultInPercent(true)
+                .resultScale(2);
 
-        assertEquals("0.020000", modifiedDietzMwrCalculator.calculateReturn(req1.copy()
+        assertEquals("2.00", modifiedDietzMwrCalculator.calculateReturn(req1.copy()
                 .annualization(DO_NOT_ANNUALIZE).build()).toPlainString());
-        assertEquals("0.009950", modifiedDietzMwrCalculator.calculateReturn(req1.copy()
+        assertEquals("2.00", modifiedDietzMwrCalculator.calculateReturn(req1.copy()
                 .annualization(ANNUALIZE).build()).toPlainString());
 
         PerfCalcRequestBuilder req2 = PerfCalcRequest.builder()
@@ -198,11 +203,13 @@ class PerformanceCalculatorTest {
                 .assetValues(List.of(
                         new DateAmount(parse("2021-12-31"), new BigDecimal("0"))))
                 .flowTiming(BEGINNING_OF_DAY)
-                .annualization(DO_NOT_ANNUALIZE);
+                .annualization(DO_NOT_ANNUALIZE)
+                .resultInPercent(true)
+                .resultScale(2);
 
-        assertEquals("0.020000", modifiedDietzMwrCalculator.calculateReturn(req2.copy()
+        assertEquals("2.00", modifiedDietzMwrCalculator.calculateReturn(req2.copy()
                 .annualization(DO_NOT_ANNUALIZE).build()).toPlainString());
-        assertEquals("0.020000", modifiedDietzMwrCalculator.calculateReturn(req2.copy()
+        assertEquals("2.00", modifiedDietzMwrCalculator.calculateReturn(req2.copy()
                 .annualization(ANNUALIZE).build()).toPlainString());
 
     }

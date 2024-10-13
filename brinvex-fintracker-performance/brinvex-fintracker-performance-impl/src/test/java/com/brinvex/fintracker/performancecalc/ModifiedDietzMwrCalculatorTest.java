@@ -72,15 +72,17 @@ class ModifiedDietzMwrCalculatorTest {
                         new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
                 ))
                 .flowTiming(FlowTiming.END_OF_DAY)
-                .annualization(DO_NOT_ANNUALIZE);
+                .annualization(DO_NOT_ANNUALIZE)
+                .resultScale(4)
+                .resultInPercent(true);
 
         BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(calcReqBuilder.build());
-        assertEquals("0.153061", ret1.toPlainString());
+        assertEquals("15.3061", ret1.toPlainString());
 
         PerfCalcRequestBuilder mwrReq2 = calcReqBuilder.copy()
                 .flowTiming(BEGINNING_OF_DAY);
         BigDecimal ret2 = modifiedDietzMwrCalculator.calculateReturn(mwrReq2.build());
-        assertEquals("0.152239", ret2.toPlainString());
+        assertEquals("15.2239", ret2.toPlainString());
 
         assertTrue(ret1.compareTo(ret2) > 0);
     }
@@ -102,15 +104,17 @@ class ModifiedDietzMwrCalculatorTest {
                         new DateAmount(parse("2020-06-11"), new BigDecimal("20000"))
                 ))
                 .flowTiming(FlowTiming.END_OF_DAY)
-                .annualization(DO_NOT_ANNUALIZE);
+                .annualization(DO_NOT_ANNUALIZE)
+                .resultScale(4)
+                .resultInPercent(true);
 
         BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy().build());
-        assertEquals("0.070642", ret1.toPlainString());
+        assertEquals("7.0642", ret1.toPlainString());
 
         BigDecimal ret2 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
                 .flowTiming(BEGINNING_OF_DAY)
                 .build());
-        assertEquals("0.069495", ret2.toPlainString());
+        assertEquals("6.9495", ret2.toPlainString());
 
         assertTrue(ret1.compareTo(ret2) > 0);
     }
@@ -233,10 +237,8 @@ class ModifiedDietzMwrCalculatorTest {
             PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                     .startDateIncl(parse("2016-01-01"))
                     .endDateIncl(parse("2016-12-31"))
-                    .startAssetValueExcl(ZERO)
+                    .startAssetValueExcl(new BigDecimal("1800000"))
                     .endAssetValueIncl(new BigDecimal("1818000"))
-                    .flows(List.of(
-                            new DateAmount(parse("2016-12-30"), new BigDecimal("1800000"))))
                     .flowTiming(FlowTiming.END_OF_DAY)
                     .annualization(DO_NOT_ANNUALIZE);
 
@@ -248,84 +250,14 @@ class ModifiedDietzMwrCalculatorTest {
             PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                     .startDateIncl(parse("2016-01-01"))
                     .endDateIncl(parse("2016-12-31"))
-                    .startAssetValueExcl(ZERO)
-                    .endAssetValueIncl(new BigDecimal("1818000"))
-                    .flows(List.of(
-                            new DateAmount(parse("2016-12-31"), new BigDecimal("1800000"))))
-                    .flowTiming(BEGINNING_OF_DAY)
-                    .annualization(DO_NOT_ANNUALIZE);
-
-            BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.build());
-            assertEquals("0.010000", ret1.toPlainString());
-
-            BigDecimal ret2 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .endAssetValueIncl(ZERO)
-                    .flows(emptyList())
-                    .build());
-            assertEquals(0, ret2.compareTo(ZERO));
-
-            BigDecimal ret3 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .flowTiming(FlowTiming.END_OF_DAY)
-                    .build());
-            assertEquals(0, ret3.compareTo(ZERO));
-
-            BigDecimal ret4 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .flows(List.of(
-                            new DateAmount(parse("2016-01-01"), new BigDecimal("1000000")),
-                            new DateAmount(parse("2016-01-01"), new BigDecimal("800000"))))
-                    .build());
-            assertEquals(0, ret4.compareTo(ret1), () -> "ret1=%s, ret4=%s".formatted(ret1, ret4));
-
-        }
-        {
-            PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
-                    .startDateIncl(parse("2016-01-01"))
-                    .endDateIncl(parse("2016-12-31"))
                     .startAssetValueExcl(new BigDecimal("1800000"))
-                    .endAssetValueIncl(ZERO)
-                    .flows(List.of(new DateAmount(parse("2016-01-01"), new BigDecimal("-1818000"))))
-                    .flowTiming(FlowTiming.END_OF_DAY)
+                    .endAssetValueIncl(new BigDecimal("1818000"))
+                    .flowTiming(BEGINNING_OF_DAY)
                     .annualization(DO_NOT_ANNUALIZE);
 
             BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.build());
             assertEquals("0.010000", ret1.toPlainString());
-
-            BigDecimal ret2 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .startAssetValueExcl(ZERO)
-                    .flows(emptyList())
-                    .build());
-            assertEquals(0, ret2.compareTo(ZERO));
-
-            BigDecimal ret3 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .flowTiming(BEGINNING_OF_DAY)
-                    .build());
-            assertEquals(0, ret3.compareTo(ZERO));
-
-            BigDecimal ret4 = modifiedDietzMwrCalculator.calculateReturn(mwrReq.copy()
-                    .flows(List.of(
-                            new DateAmount(parse("2016-01-01"), new BigDecimal("-1000000")),
-                            new DateAmount(parse("2016-01-01"), new BigDecimal("-818000"))))
-                    .build());
-            assertEquals(0, ret4.compareTo(ret1), () -> "ret1=%s, ret4=%s".formatted(ret1, ret4));
         }
-    }
-
-    /*
-     * https://en.wikipedia.org/wiki/Modified_Dietz_method
-     */
-    @Test
-    void dietz_Wikipedia3() {
-        BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(PerfCalcRequest.builder()
-                .startDateIncl(parse("2016-01-01"))
-                .endDateIncl(parse("2016-01-01"))
-                .startAssetValueExcl(new BigDecimal("0"))
-                .endAssetValueIncl(new BigDecimal("99"))
-                .flows(List.of(
-                        new DateAmount(parse("2016-01-01"), new BigDecimal("100"))))
-                .flowTiming(FlowTiming.END_OF_DAY)
-                .annualization(DO_NOT_ANNUALIZE)
-                .build());
-        assertEquals("0.000000", ret1.toPlainString());
     }
 
     /*

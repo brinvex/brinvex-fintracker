@@ -110,6 +110,25 @@ public final class PerfCalcRequest {
         return new PerfCalcRequestBuilder();
     }
 
+    @SuppressWarnings("DuplicatedCode")
+    public PerfCalcRequestBuilder toBuilder() {
+        PerfCalcRequestBuilder builder = new PerfCalcRequestBuilder();
+        builder.startDateIncl = startDateIncl;
+        builder.endDateIncl = endDateIncl;
+        builder.startAssetValueExcl = startAssetValueExcl;
+        builder.endAssetValueIncl = endAssetValueIncl;
+        builder.largeFlowLevelInPercent = largeFlowLevelInPercent;
+        builder.flowTiming = flowTiming;
+        builder.annualization = annualization;
+        builder.resultInPercent = resultInPercent;
+        builder.calcScale = calcScale;
+        builder.resultScale = resultScale;
+        builder.assetValuesMap = assetValues;
+        builder.flowsMap = flows;
+        builder.roundingMode = roundingMode;
+        return builder;
+    }
+
     @Setter
     @Accessors(fluent = true, chain = true)
     public static class PerfCalcRequestBuilder {
@@ -129,10 +148,10 @@ public final class PerfCalcRequest {
         private Integer largeFlowLevelInPercent;
         private FlowTiming flowTiming;
         private AnnualizationOption annualization;
-        Boolean resultInPercent;
-        Integer calcScale;
-        Integer resultScale;
-        RoundingMode roundingMode;
+        private Boolean resultInPercent;
+        private Integer calcScale;
+        private Integer resultScale;
+        private RoundingMode roundingMode;
 
         private PerfCalcRequestBuilder() {
         }
@@ -200,6 +219,7 @@ public final class PerfCalcRequest {
             copy.assetValuesCollection = assetValuesCollection;
             copy.flowsMap = flowsMap;
             copy.flowsCollection = flowsCollection;
+            copy.roundingMode = roundingMode;
             return copy;
         }
     }

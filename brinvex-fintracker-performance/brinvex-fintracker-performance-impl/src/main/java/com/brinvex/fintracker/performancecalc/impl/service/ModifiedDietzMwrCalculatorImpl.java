@@ -4,15 +4,15 @@ import com.brinvex.fintracker.core.api.exception.CalculationException;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
+import com.brinvex.util.java.CollectionUtil;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Map.Entry;
-import java.util.SequencedMap;
+import java.util.SortedMap;
 
-import static com.brinvex.util.java.Collectors.toLinkedMap;
 import static java.lang.Math.toIntExact;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -38,14 +38,14 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
             LocalDate endDateIncl,
             BigDecimal startValueExcl,
             BigDecimal endValueIncl,
-            SequencedMap<LocalDate, BigDecimal> flows,
+            SortedMap<LocalDate, BigDecimal> flows,
             FlowTiming flowTiming,
             int calcScale,
             RoundingMode roundingMode
     ) {
         BigDecimal adjStartValueExcl;
         LocalDate adjStartDateIncl;
-        if (startValueExcl.compareTo(ZERO) == 0) {
+        /*if (startValueExcl.compareTo(ZERO) == 0) {
             if (flows.isEmpty()) {
                 Validate.isTrue(endValueIncl.compareTo(ZERO) == 0);
                 return ZERO;
@@ -53,10 +53,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
                 Entry<LocalDate, BigDecimal> firstFlow = flows.firstEntry();
                 adjStartValueExcl = firstFlow.getValue();
                 LocalDate firstFlowDate = firstFlow.getKey();
-                flows = flows.entrySet()
-                        .stream()
-                        .dropWhile(e -> !e.getKey().isAfter(firstFlowDate))
-                        .collect(toLinkedMap(Entry::getKey, Entry::getValue));
+                flows = CollectionUtil.rangeSafeTailMap(flows, firstFlowDate.plusDays(1));
                 switch (flowTiming) {
                     case BEGINNING_OF_DAY -> adjStartDateIncl = firstFlowDate;
                     case END_OF_DAY -> {
@@ -74,7 +71,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
                     default -> throw new IllegalStateException("Unexpected value: " + flowTiming);
                 }
             }
-        } else {
+        } else */{
             adjStartValueExcl = startValueExcl;
             adjStartDateIncl = startDateIncl;
         }
@@ -85,14 +82,11 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
 
         BigDecimal adjEndValueIncl;
         LocalDate adjEndDateIncl;
-        if (endValueIncl.compareTo(ZERO) == 0 && !flows.isEmpty()) {
+        /*if (endValueIncl.compareTo(ZERO) == 0 && !flows.isEmpty()) {
             Entry<LocalDate, BigDecimal> lastFlow = flows.lastEntry();
             adjEndValueIncl = lastFlow.getValue().negate();
             LocalDate lastFlowDate = lastFlow.getKey();
-            flows = flows.entrySet()
-                    .stream()
-                    .takeWhile(e -> e.getKey().isBefore(lastFlowDate))
-                    .collect(toLinkedMap(Entry::getKey, Entry::getValue));
+            flows = CollectionUtil.rangeSafeHeadMap(flows, lastFlowDate);
             switch (flowTiming) {
                 case BEGINNING_OF_DAY -> {
                     int lastCashFlowDateToAdjStartDateComp = lastFlowDate.compareTo(adjStartDateIncl);
@@ -109,15 +103,24 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
                 case END_OF_DAY -> adjEndDateIncl = lastFlowDate;
                 default -> throw new IllegalStateException("Unexpected value: " + flowTiming);
             }
-        } else {
+        } else*/ {
             adjEndValueIncl = endValueIncl;
             adjEndDateIncl = endDateIncl;
         }
 
-        if (adjEndValueIncl.compareTo(ZERO) <= 0) {
+        if (adjEndValueIncl.compareTo(ZERO) == 0) {
             //Bankruptcy
             return ONE.negate();
         }
+
+/*
+        else {
+            if (adjEndValueIncl.compareTo(ZERO) < 0) {
+                throw new IllegalArgumentException("adjEndValueIncl must not be less than zero, given: %s"
+                        .formatted(adjEndValueIncl));
+            }
+        }
+*/
 
         BigDecimal totalDays = new BigDecimal(DAYS.between(adjStartDateIncl, adjEndDateIncl) + 1);
 
