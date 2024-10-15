@@ -1,6 +1,6 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
-import com.brinvex.fintracker.core.api.exception.NotYetImplementedException;
+import com.brinvex.fintracker.core.api.model.general.DateRange;
 import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysis;
@@ -19,7 +19,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
@@ -31,7 +33,9 @@ import static com.brinvex.util.java.CollectionUtil.rangeSafeTailMap;
 import static com.brinvex.util.java.DateUtil.minDate;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.emptySortedMap;
+import static java.util.Collections.reverseOrder;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Map.Entry.comparingByKey;
 
 @SuppressWarnings("DuplicatedCode")
 public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
@@ -73,22 +77,65 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         boolean calculateTrailingTwr3Y = perfAnalysisReq.calculateTrailingTwr3Y();
         boolean calculateTrailingTwr5Y = perfAnalysisReq.calculateTrailingTwr5Y();
         boolean calculateTrailingTwr10Y = perfAnalysisReq.calculateTrailingTwr10Y();
-
         SortedMap<LocalDate, BigDecimal> flows = perfAnalysisReq.flows();
         Map<LocalDate, BigDecimal> assetValues = perfAnalysisReq.assetValues();
         SortedMap<LocalDate, BigDecimal> incomes = perfAnalysisReq.incomes();
 
         LocalDate startDateExcl = startDateIncl.minusDays(1);
         BigDecimal startValueExcl = assetValues.get(startDateExcl);
-        Validate.notNull(startValueExcl, () -> "startAssetValueExcl must not be null, missing assetValue for startDateExcl=%s"
-                .formatted(startDateExcl));
 
-        LocalDate periodStartDateIncl = startDateIncl;
         List<PerfAnalysis> results = new ArrayList<>();
+        SortedMap<LocalDate, BigDecimal> iterativeForwardFlows = flows;
+
+        {
+            LocalDate periodStartDateIncl = startDateIncl;
+            while (!periodStartDateIncl.isAfter(endDateIncl)) {
+                LocalDate periodStartDateExcl = periodStartDateIncl.minusDays(1);
+                LocalDate periodEndDateIncl = minDate(periodUnit.adjEndDateIncl(periodStartDateIncl), endDateIncl);
+                LocalDate periodEndDateExcl = periodEndDateIncl.plusDays(1);
+
+                BigDecimal periodStartValueExcl = assetValues.get(periodStartDateExcl);
+                Validate.notNull(periodStartValueExcl, () -> "periodStartValueExcl must not be null, missing assetValue for periodStartDateExcl=%s"
+                        .formatted(periodStartDateExcl));
+
+                if (periodStartValueExcl.compareTo(ZERO) != 0) {
+                    startDateIncl = periodStartDateIncl;
+                    startValueExcl = periodStartValueExcl;
+                    break;
+                }
+
+                SortedMap<LocalDate, BigDecimal> periodFlows = rangeSafeHeadMap(iterativeForwardFlows, periodEndDateExcl);
+                if (!periodFlows.isEmpty()) {
+                    startDateIncl = periodFlows.firstKey();
+                    startValueExcl = ZERO;
+                    break;
+                }
+
+                BigDecimal periodEndValueIncl = assetValues.get(periodEndDateIncl);
+                Validate.notNull(periodEndValueIncl, () -> "periodEndValueIncl must not be null, missing assetValue for periodEndDateIncl=%s"
+                        .formatted(periodEndDateIncl));
+
+                Validate.isTrue(periodEndValueIncl.compareTo(ZERO) == 0);
+
+                results.add(PerfAnalysis.builder()
+                        .periodStartDateIncl(periodStartDateIncl)
+                        .periodEndDateIncl(periodEndDateIncl)
+                        .periodCaption(periodUnit.caption(periodStartDateIncl))
+                        .periodStartAssetValueExcl(ZERO)
+                        .periodEndAssetValueIncl(ZERO)
+                        .periodFlow(ZERO)
+                        .build());
+
+                periodStartDateIncl = periodEndDateExcl;
+                iterativeForwardFlows = rangeSafeTailMap(iterativeForwardFlows, periodEndDateExcl);
+
+                startDateIncl = periodStartDateIncl;
+            }
+        }
+
         BigDecimal cumulTwrFactor = ONE;
         BigDecimal totalContribution = startValueExcl;
         BigDecimal totalProfit = ZERO;
-        SortedMap<LocalDate, BigDecimal> iterativeForwardFlows = flows;
         SortedMap<LocalDate, BigDecimal> iterativeForwardIncomes = incomes;
         int periodFrequencyPerYear = periodUnit.frequencyPerYear();
         int periodFrequencyPerYears2 = periodFrequencyPerYear * 2;
@@ -104,11 +151,12 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         LimitedLinkedMap<LocalDate, BigDecimal> trailingTwrFactors5Y = new LimitedLinkedMap<>(periodFrequencyPerYears5);
         LimitedLinkedMap<LocalDate, BigDecimal> trailingTwrFactors10Y = new LimitedLinkedMap<>(periodFrequencyPerYears10);
 
+        LocalDate periodStartDateIncl = startDateIncl;
         while (!periodStartDateIncl.isAfter(endDateIncl)) {
             LocalDate periodStartDateExcl = periodStartDateIncl.minusDays(1);
             LocalDate periodEndDateIncl = minDate(periodUnit.adjEndDateIncl(periodStartDateIncl), endDateIncl);
             LocalDate periodEndDateExcl = periodEndDateIncl.plusDays(1);
-            BigDecimal periodStartValueExcl = assetValues.get(periodStartDateExcl);
+            BigDecimal periodStartValueExcl = periodStartDateIncl.isEqual(startDateIncl) ? startValueExcl : assetValues.get(periodStartDateExcl);
             Validate.notNull(periodStartValueExcl, () -> "periodStartValueExcl must not be null, missing assetValue for periodStartDateExcl=%s"
                     .formatted(periodStartDateExcl));
             BigDecimal periodEndValueIncl = assetValues.get(periodEndDateIncl);
@@ -116,6 +164,8 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                     .formatted(periodEndDateIncl));
 
             SortedMap<LocalDate, BigDecimal> periodFlows = rangeSafeHeadMap(iterativeForwardFlows, periodEndDateExcl);
+
+            BigDecimal periodFlowSum = periodFlows.values().stream().reduce(ZERO, BigDecimal::add);
 
             PerfCalcRequest periodPerfCalcReq = PerfCalcRequest.builder()
                     .startDateIncl(periodStartDateIncl)
@@ -163,7 +213,6 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 annMwr = annualizeReturn(ANNUALIZE_IF_OVER_ONE_YEAR, cumulMwr, startDateIncl, periodEndDateIncl);
             }
 
-            BigDecimal periodFlowSum = periodFlows.values().stream().reduce(ZERO, BigDecimal::add);
             totalContribution = totalContribution.add(periodFlowSum);
             BigDecimal periodProfit = periodEndValueIncl.subtract(periodStartValueExcl).subtract(periodFlowSum);
             totalProfit = totalProfit.add(periodProfit);
@@ -290,7 +339,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                     .trailingTwr10Y(toPctAndScale(trailTwrFactor10Y == null ? null : trailTwrFactor10Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
                     .build());
 
-            periodStartDateIncl = periodEndDateIncl.plusDays(1);
+            periodStartDateIncl = periodEndDateExcl;
             iterativeForwardFlows = rangeSafeTailMap(iterativeForwardFlows, periodEndDateExcl);
             if (calculatePeriodIncome || calculateTrailingAvgIncome1Y) {
                 iterativeForwardIncomes = rangeSafeTailMap(iterativeForwardIncomes, periodEndDateExcl);
@@ -307,5 +356,106 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             input = input.multiply(Num._100);
         }
         return input.setScale(scale, roundingMode);
+    }
+
+    protected static DateRange.Inclusive detectInvestmentDateRange(
+            LocalDate analysisStartDateIncl,
+            LocalDate analysisEndDateIncl,
+            Map<LocalDate, BigDecimal> assetValues,
+            SortedSet<LocalDate> flowDates,
+            FlowTiming flowTiming
+    ) {
+        return new DateRange.Inclusive(
+                detectInvestmentStartDate(
+                        analysisStartDateIncl,
+                        analysisEndDateIncl,
+                        assetValues,
+                        flowDates,
+                        flowTiming
+                ),
+                detectInvestmentEndDate(
+                        analysisStartDateIncl,
+                        analysisEndDateIncl,
+                        assetValues,
+                        flowDates
+                )
+        );
+    }
+
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    protected static LocalDate detectInvestmentStartDate(
+            LocalDate analysisStartDateIncl,
+            LocalDate analysisEndDateIncl,
+            Map<LocalDate, BigDecimal> assetValues,
+            SortedSet<LocalDate> flowDates,
+            FlowTiming flowTiming
+    ) {
+        LocalDate analysisStartDateExcl = analysisStartDateIncl.minusDays(1);
+        BigDecimal analysisStartValueExcl = assetValues.get(analysisStartDateExcl);
+        if (analysisStartValueExcl != null) {
+            int signum = analysisStartValueExcl.signum();
+            if (signum > 0) {
+                return analysisStartDateIncl;
+            }
+            if (signum < 0) {
+                throw new IllegalArgumentException(
+                        "assetValue must not be negative, given: %s, %s".formatted(analysisStartDateExcl, analysisStartValueExcl));
+            }
+        }
+        LocalDate investmentStartDateMax;
+        if (flowDates.isEmpty()) {
+            investmentStartDateMax = analysisEndDateIncl.plusDays(1);
+        } else {
+            investmentStartDateMax = switch (flowTiming) {
+                case BEGINNING_OF_DAY -> flowDates.getFirst();
+                case END_OF_DAY -> flowDates.getFirst().plusDays(1);
+            };
+        }
+        LocalDate investmentStartDate = assetValues.entrySet()
+                .stream()
+                .filter(e -> {
+                    LocalDate assetValueDate = e.getKey();
+                    return assetValueDate.isBefore(investmentStartDateMax) && !assetValueDate.isBefore(analysisStartDateIncl);
+                })
+                .sorted(comparingByKey())
+                .dropWhile(e -> e.getValue().compareTo(ZERO) == 0)
+                .map(Entry::getKey)
+                .findFirst()
+                .map(d -> d.plusDays(1))
+                .orElse(analysisStartDateIncl);
+        return investmentStartDate;
+    }
+
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    protected static LocalDate detectInvestmentEndDate(
+            LocalDate analysisStartDateIncl,
+            LocalDate analysisEndDateIncl,
+            Map<LocalDate, BigDecimal> assetValues,
+            SortedSet<LocalDate> flowDates
+    ) {
+        BigDecimal analysisEndValueIncl = assetValues.get(analysisEndDateIncl);
+        if (analysisEndValueIncl != null) {
+            int signum = analysisEndValueIncl.signum();
+            if (signum > 0) {
+                return analysisEndDateIncl;
+            }
+            if (signum < 0) {
+                throw new IllegalArgumentException(
+                        "assetValue must not be negative, given: %s, %s".formatted(analysisEndDateIncl, analysisEndValueIncl));
+            }
+        }
+        LocalDate investmentEndDateMin = flowDates.isEmpty() ? analysisStartDateIncl : flowDates.getLast();
+        LocalDate investmentEndDateIncl = assetValues.entrySet()
+                .stream()
+                .filter(e -> {
+                    LocalDate assetValueDate = e.getKey();
+                    return !assetValueDate.isBefore(investmentEndDateMin) && !assetValueDate.isAfter(analysisEndDateIncl);
+                })
+                .sorted(reverseOrder(comparingByKey()))
+                .takeWhile(e -> e.getValue().compareTo(ZERO) == 0)
+                .map(Entry::getKey)
+                .min(naturalOrder())
+                .orElse(analysisEndDateIncl);
+        return investmentEndDateIncl;
     }
 }

@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.performancecalc;
+package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.core.api.model.general.DateAmount;
@@ -9,7 +9,6 @@ import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest.PerfCalc
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.LinkedModifiedDietzTwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.TrueTwrCalculator;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

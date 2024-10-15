@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.performancecalc;
+package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.core.api.exception.CalculationException;
@@ -8,7 +8,6 @@ import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest.PerfCalcRequestBuilder;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.ModifiedDietzMwrCalculator;
-import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator.MwrCalculator;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -17,10 +16,8 @@ import java.util.List;
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
-import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.LocalDate.parse;
-import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

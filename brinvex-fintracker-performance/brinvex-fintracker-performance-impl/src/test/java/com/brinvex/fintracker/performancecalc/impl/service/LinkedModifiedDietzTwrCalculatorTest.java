@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.performancecalc;
+package com.brinvex.fintracker.performancecalc.impl.service;
 
 import com.brinvex.fintracker.core.api.FinTracker;
 import com.brinvex.fintracker.core.api.model.general.DateAmount;

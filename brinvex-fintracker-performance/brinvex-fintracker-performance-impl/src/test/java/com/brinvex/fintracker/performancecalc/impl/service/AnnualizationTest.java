@@ -1,4 +1,4 @@
-package com.brinvex.fintracker.performancecalc;
+package com.brinvex.fintracker.performancecalc.impl.service;
 
 import org.junit.jupiter.api.Test;
 
