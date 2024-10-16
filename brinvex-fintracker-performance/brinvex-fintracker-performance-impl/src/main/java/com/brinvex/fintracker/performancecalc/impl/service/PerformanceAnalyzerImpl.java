@@ -1,6 +1,5 @@
 package com.brinvex.fintracker.performancecalc.impl.service;
 
-import com.brinvex.fintracker.core.api.model.general.DateRange;
 import com.brinvex.fintracker.core.api.model.general.PeriodUnit;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfAnalysis;
@@ -19,9 +18,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
@@ -33,9 +30,6 @@ import static com.brinvex.util.java.CollectionUtil.rangeSafeTailMap;
 import static com.brinvex.util.java.DateUtil.minDate;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.reverseOrder;
-import static java.util.Comparator.naturalOrder;
-import static java.util.Map.Entry.comparingByKey;
 
 @SuppressWarnings("DuplicatedCode")
 public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
@@ -356,106 +350,5 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             input = input.multiply(Num._100);
         }
         return input.setScale(scale, roundingMode);
-    }
-
-    protected static DateRange.Inclusive detectInvestmentDateRange(
-            LocalDate analysisStartDateIncl,
-            LocalDate analysisEndDateIncl,
-            Map<LocalDate, BigDecimal> assetValues,
-            SortedSet<LocalDate> flowDates,
-            FlowTiming flowTiming
-    ) {
-        return new DateRange.Inclusive(
-                detectInvestmentStartDate(
-                        analysisStartDateIncl,
-                        analysisEndDateIncl,
-                        assetValues,
-                        flowDates,
-                        flowTiming
-                ),
-                detectInvestmentEndDate(
-                        analysisStartDateIncl,
-                        analysisEndDateIncl,
-                        assetValues,
-                        flowDates
-                )
-        );
-    }
-
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    protected static LocalDate detectInvestmentStartDate(
-            LocalDate analysisStartDateIncl,
-            LocalDate analysisEndDateIncl,
-            Map<LocalDate, BigDecimal> assetValues,
-            SortedSet<LocalDate> flowDates,
-            FlowTiming flowTiming
-    ) {
-        LocalDate analysisStartDateExcl = analysisStartDateIncl.minusDays(1);
-        BigDecimal analysisStartValueExcl = assetValues.get(analysisStartDateExcl);
-        if (analysisStartValueExcl != null) {
-            int signum = analysisStartValueExcl.signum();
-            if (signum > 0) {
-                return analysisStartDateIncl;
-            }
-            if (signum < 0) {
-                throw new IllegalArgumentException(
-                        "assetValue must not be negative, given: %s, %s".formatted(analysisStartDateExcl, analysisStartValueExcl));
-            }
-        }
-        LocalDate investmentStartDateMax;
-        if (flowDates.isEmpty()) {
-            investmentStartDateMax = analysisEndDateIncl.plusDays(1);
-        } else {
-            investmentStartDateMax = switch (flowTiming) {
-                case BEGINNING_OF_DAY -> flowDates.getFirst();
-                case END_OF_DAY -> flowDates.getFirst().plusDays(1);
-            };
-        }
-        LocalDate investmentStartDate = assetValues.entrySet()
-                .stream()
-                .filter(e -> {
-                    LocalDate assetValueDate = e.getKey();
-                    return assetValueDate.isBefore(investmentStartDateMax) && !assetValueDate.isBefore(analysisStartDateIncl);
-                })
-                .sorted(comparingByKey())
-                .dropWhile(e -> e.getValue().compareTo(ZERO) == 0)
-                .map(Entry::getKey)
-                .findFirst()
-                .map(d -> d.plusDays(1))
-                .orElse(analysisStartDateIncl);
-        return investmentStartDate;
-    }
-
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    protected static LocalDate detectInvestmentEndDate(
-            LocalDate analysisStartDateIncl,
-            LocalDate analysisEndDateIncl,
-            Map<LocalDate, BigDecimal> assetValues,
-            SortedSet<LocalDate> flowDates
-    ) {
-        BigDecimal analysisEndValueIncl = assetValues.get(analysisEndDateIncl);
-        if (analysisEndValueIncl != null) {
-            int signum = analysisEndValueIncl.signum();
-            if (signum > 0) {
-                return analysisEndDateIncl;
-            }
-            if (signum < 0) {
-                throw new IllegalArgumentException(
-                        "assetValue must not be negative, given: %s, %s".formatted(analysisEndDateIncl, analysisEndValueIncl));
-            }
-        }
-        LocalDate investmentEndDateMin = flowDates.isEmpty() ? analysisStartDateIncl : flowDates.getLast();
-        LocalDate investmentEndDateIncl = assetValues.entrySet()
-                .stream()
-                .filter(e -> {
-                    LocalDate assetValueDate = e.getKey();
-                    return !assetValueDate.isBefore(investmentEndDateMin) && !assetValueDate.isAfter(analysisEndDateIncl);
-                })
-                .sorted(reverseOrder(comparingByKey()))
-                .takeWhile(e -> e.getValue().compareTo(ZERO) == 0)
-                .map(Entry::getKey)
-                .min(naturalOrder())
-                .orElse(analysisEndDateIncl);
-        return investmentEndDateIncl;
     }
 }
