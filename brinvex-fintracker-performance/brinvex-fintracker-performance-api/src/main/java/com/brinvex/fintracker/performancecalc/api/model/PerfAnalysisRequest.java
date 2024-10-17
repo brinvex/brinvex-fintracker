@@ -26,8 +26,10 @@ import static java.util.Collections.unmodifiableSortedMap;
 @Accessors(fluent = true)
 public final class PerfAnalysisRequest {
     private final PeriodUnit resultPeriodUnit;
-    private final LocalDate startDateIncl;
-    private final LocalDate endDateIncl;
+    private final LocalDate analysisStartDateIncl;
+    private final LocalDate analysisEndDateIncl;
+    private final LocalDate investmentStartDateIncl;
+    private final LocalDate investmentEndDateIncl;
     private final Map<LocalDate, BigDecimal> assetValues;
     private final SortedMap<LocalDate, BigDecimal> flows;
     private final FlowTiming flowTiming;
@@ -53,8 +55,8 @@ public final class PerfAnalysisRequest {
 
     private PerfAnalysisRequest(
             PeriodUnit resultPeriodUnit,
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
+            LocalDate analysisStartDateIncl,
+            LocalDate analysisEndDateIncl, LocalDate investmentStartDateIncl, LocalDate investmentEndDateIncl,
             Map<LocalDate, BigDecimal> assetValuesMap,
             Collection<DateAmount> assetValuesCollection,
             Map<LocalDate, BigDecimal> flowsMap,
@@ -80,18 +82,23 @@ public final class PerfAnalysisRequest {
             Boolean calculateTrailingTwr5Y,
             Boolean calculateTrailingTwr10Y
     ) {
-        if (startDateIncl == null) {
+        if (analysisStartDateIncl == null) {
             throw new IllegalArgumentException("startDateIncl must not be null");
         }
-        if (endDateIncl == null) {
+        if (analysisEndDateIncl == null) {
             throw new IllegalArgumentException("endDateIncl must not be null");
         }
-        if (startDateIncl.isAfter(endDateIncl)) {
+        if (analysisStartDateIncl.isAfter(analysisEndDateIncl)) {
             throw new IllegalArgumentException("startDateIncl must be before endDateIncl, given: %s, %s"
-                    .formatted(startDateIncl, endDateIncl));
+                    .formatted(analysisStartDateIncl, analysisEndDateIncl));
         }
-        this.startDateIncl = startDateIncl;
-        this.endDateIncl = endDateIncl;
+        if (resultPeriodUnit == PeriodUnit.DAY) {
+            throw new IllegalArgumentException("resultPeriodUnit must not be DAY");
+        }
+        this.analysisStartDateIncl = analysisStartDateIncl;
+        this.analysisEndDateIncl = analysisEndDateIncl;
+        this.investmentStartDateIncl = investmentStartDateIncl == null ? analysisStartDateIncl : investmentStartDateIncl;
+        this.investmentEndDateIncl = investmentEndDateIncl == null ? analysisEndDateIncl : investmentEndDateIncl;
         this.resultPeriodUnit = resultPeriodUnit == null ? PeriodUnit.MONTH : resultPeriodUnit;
         this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
         this.twrCalculatorType = twrCalculatorType == null ? TrueTwrCalculator.class : twrCalculatorType;
@@ -113,29 +120,36 @@ public final class PerfAnalysisRequest {
         this.calculateTrailingTwr5Y = calculateTrailingTwr5Y != null && calculateTrailingTwr5Y;
         this.calculateTrailingTwr10Y = calculateTrailingTwr10Y != null && calculateTrailingTwr10Y;
 
+        LocalDate startDateIncl = this.analysisStartDateIncl.isAfter(this.investmentStartDateIncl) ? this.analysisStartDateIncl : this.investmentStartDateIncl;
+        LocalDate endDateIncl = this.analysisEndDateIncl.isBefore(this.investmentEndDateIncl) ? this.analysisEndDateIncl : this.investmentEndDateIncl;
+
         this.assetValues = unmodifiableMap(PerfCalcRequest.sanitizeAssetValues(
                 assetValuesMap,
                 assetValuesCollection,
                 startDateIncl,
-                endDateIncl));
+                endDateIncl
+        ));
 
         this.flows = unmodifiableSortedMap(PerfCalcRequest.sanitizeFlows(
                 flowsMap,
                 flowsCollection,
                 startDateIncl,
-                endDateIncl));
+                endDateIncl
+        ));
 
         if (this.calculatePeriodIncome || this.calculateTrailingAvgIncome1Y) {
             if (incomesMap == null && incomesCollection == null) {
                 throw new IllegalArgumentException((
                         "if calculatePeriodIncome or calculateTrailingAvgIncome1Y is true, then incomes must not be null, given: %s, %s")
-                        .formatted(this.calculatePeriodIncome, this.calculateTrailingAvgIncome1Y));
+                        .formatted(this.calculatePeriodIncome, this.calculateTrailingAvgIncome1Y)
+                );
             }
             this.incomes = unmodifiableSortedMap(PerfCalcRequest.sanitizeFlows(
                     incomesMap,
                     incomesCollection,
                     startDateIncl,
-                    endDateIncl));
+                    endDateIncl
+            ));
         } else {
             this.incomes = null;
         }
@@ -149,8 +163,10 @@ public final class PerfAnalysisRequest {
     @Accessors(fluent = true, chain = true)
     public static class PerfAnalysisRequestBuilder {
         private PeriodUnit resultPeriodUnit;
-        private LocalDate startDateIncl;
-        private LocalDate endDateIncl;
+        private LocalDate analysisStartDateIncl;
+        private LocalDate analysisEndDateIncl;
+        private LocalDate investmentStartDateIncl;
+        private LocalDate investmentEndDateIncl;
         @Setter(AccessLevel.NONE)
         private Map<LocalDate, BigDecimal> assetValuesMap;
         @Setter(AccessLevel.NONE)
@@ -231,8 +247,10 @@ public final class PerfAnalysisRequest {
         public PerfAnalysisRequest build() {
             return new PerfAnalysisRequest(
                     resultPeriodUnit,
-                    startDateIncl,
-                    endDateIncl,
+                    analysisStartDateIncl,
+                    analysisEndDateIncl,
+                    investmentStartDateIncl,
+                    investmentEndDateIncl,
                     assetValuesMap,
                     assetValuesCollection,
                     flowsMap,

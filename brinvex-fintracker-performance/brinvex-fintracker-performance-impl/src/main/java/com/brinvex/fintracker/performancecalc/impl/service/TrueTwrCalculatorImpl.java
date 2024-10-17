@@ -140,7 +140,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             }
             cumulGrowthFactor = cumulGrowthFactor.multiply(periodFactor).setScale(calcScale, roundingMode);
 
-            // Variable values for the next iteration
+            //For the next iteration
             {
                 subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
                 if (i < periodCount) {
@@ -225,7 +225,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             }
             cumulGrowthFactor = cumulGrowthFactor.multiply(periodFactor).setScale(calcScale, roundingMode);
 
-            // Variable values for the next iteration
+            //For the next iteration
             {
                 subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
                 if (i < periodCount) {

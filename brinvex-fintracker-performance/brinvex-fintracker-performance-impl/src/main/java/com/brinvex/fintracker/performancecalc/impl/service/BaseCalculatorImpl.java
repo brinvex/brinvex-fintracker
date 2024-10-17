@@ -51,28 +51,20 @@ public abstract class BaseCalculatorImpl implements PerformanceCalculator {
         }
 
         BigDecimal cumulReturn;
-
-        int endValueSignum = endValueIncl.signum();
-        if (endValueSignum == -1) {
-            throw new IllegalArgumentException("endValueIncl must not be less than zero; given: %s".formatted(endValueIncl));
-        } else if (endValueSignum == 0) {
-            cumulReturn = ONE.negate();
+        if (flows.isEmpty()) {
+            cumulReturn = SimpleReturnCalculatorImpl.calculateSimpleCumulReturn(
+                    startValueExcl,
+                    endValueIncl,
+                    perfCalcRequest.calcScale(),
+                    perfCalcRequest.roundingMode()
+            );
         } else {
-            if (flows.isEmpty()) {
-                cumulReturn = SimpleReturnCalculatorImpl.calculateSimpleCumulReturn(
-                        startValueExcl,
-                        endValueIncl,
-                        perfCalcRequest.calcScale(),
-                        perfCalcRequest.roundingMode()
-                );
-            } else {
-                PerfCalcRequest adjPerfCalcRequest = perfCalcRequest.toBuilder()
-                        .startAssetValueExcl(startValueExcl)
-                        .endAssetValueIncl(endValueIncl)
-                        .flows(flows)
-                        .build();
-                cumulReturn = calculateCumulativeReturn(adjPerfCalcRequest);
-            }
+            PerfCalcRequest adjPerfCalcRequest = perfCalcRequest.toBuilder()
+                    .startAssetValueExcl(startValueExcl)
+                    .endAssetValueIncl(endValueIncl)
+                    .flows(flows)
+                    .build();
+            cumulReturn = calculateCumulativeReturn(adjPerfCalcRequest);
         }
 
         BigDecimal unscaledAnnReturn = annualizeReturn(

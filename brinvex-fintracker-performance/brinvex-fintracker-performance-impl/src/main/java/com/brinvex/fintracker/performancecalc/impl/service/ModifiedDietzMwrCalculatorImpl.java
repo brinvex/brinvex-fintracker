@@ -4,7 +4,7 @@ import com.brinvex.fintracker.core.api.exception.CalculationException;
 import com.brinvex.fintracker.performancecalc.api.model.FlowTiming;
 import com.brinvex.fintracker.performancecalc.api.model.PerfCalcRequest;
 import com.brinvex.fintracker.performancecalc.api.service.PerformanceCalculator;
-import com.brinvex.util.java.CollectionUtil;
+import com.brinvex.util.java.Num;
 import com.brinvex.util.java.validation.Validate;
 
 import java.math.BigDecimal;
@@ -43,98 +43,19 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
             int calcScale,
             RoundingMode roundingMode
     ) {
-        BigDecimal adjStartValueExcl;
-        LocalDate adjStartDateIncl;
-        /*if (startValueExcl.compareTo(ZERO) == 0) {
-            if (flows.isEmpty()) {
-                Validate.isTrue(endValueIncl.compareTo(ZERO) == 0);
-                return ZERO;
-            } else {
-                Entry<LocalDate, BigDecimal> firstFlow = flows.firstEntry();
-                adjStartValueExcl = firstFlow.getValue();
-                LocalDate firstFlowDate = firstFlow.getKey();
-                flows = CollectionUtil.rangeSafeTailMap(flows, firstFlowDate.plusDays(1));
-                switch (flowTiming) {
-                    case BEGINNING_OF_DAY -> adjStartDateIncl = firstFlowDate;
-                    case END_OF_DAY -> {
-                        int firstCashFlowDateToEndDateComp = firstFlowDate.compareTo(endDateIncl);
-                        if (firstCashFlowDateToEndDateComp == 0) {
-                            return ZERO;
-                        } else if (firstCashFlowDateToEndDateComp < 0) {
-                            adjStartDateIncl = firstFlowDate.plusDays(1);
-                        } else {
-                            throw new IllegalArgumentException(
-                                    "if startAssetValueExcl is zero, then firstCashFlowDate must not be after endDateIncl, given: %s, %s"
-                                            .formatted(firstFlowDate, endDateIncl));
-                        }
-                    }
-                    default -> throw new IllegalStateException("Unexpected value: " + flowTiming);
-                }
-            }
-        } else */{
-            adjStartValueExcl = startValueExcl;
-            adjStartDateIncl = startDateIncl;
-        }
-        if (adjStartValueExcl.compareTo(ZERO) <= 0) {
-            throw new IllegalArgumentException("adjStartValueExcl must be greater than zero, given: %s"
-                    .formatted(adjStartValueExcl));
-        }
-
-        BigDecimal adjEndValueIncl;
-        LocalDate adjEndDateIncl;
-        /*if (endValueIncl.compareTo(ZERO) == 0 && !flows.isEmpty()) {
-            Entry<LocalDate, BigDecimal> lastFlow = flows.lastEntry();
-            adjEndValueIncl = lastFlow.getValue().negate();
-            LocalDate lastFlowDate = lastFlow.getKey();
-            flows = CollectionUtil.rangeSafeHeadMap(flows, lastFlowDate);
-            switch (flowTiming) {
-                case BEGINNING_OF_DAY -> {
-                    int lastCashFlowDateToAdjStartDateComp = lastFlowDate.compareTo(adjStartDateIncl);
-                    if (lastCashFlowDateToAdjStartDateComp == 0) {
-                        return ZERO;
-                    } else if (lastCashFlowDateToAdjStartDateComp > 0) {
-                        adjEndDateIncl = lastFlowDate.minusDays(1);
-                    } else {
-                        throw new IllegalArgumentException(
-                                "if endValueExcl is zero, then lastCashFlowDate must not be before adjStartDateIncl, given: %s, %s"
-                                        .formatted(lastFlowDate, adjStartDateIncl));
-                    }
-                }
-                case END_OF_DAY -> adjEndDateIncl = lastFlowDate;
-                default -> throw new IllegalStateException("Unexpected value: " + flowTiming);
-            }
-        } else*/ {
-            adjEndValueIncl = endValueIncl;
-            adjEndDateIncl = endDateIncl;
-        }
-
-        if (adjEndValueIncl.compareTo(ZERO) == 0) {
-            //Bankruptcy
-            return ONE.negate();
-        }
-
-/*
-        else {
-            if (adjEndValueIncl.compareTo(ZERO) < 0) {
-                throw new IllegalArgumentException("adjEndValueIncl must not be less than zero, given: %s"
-                        .formatted(adjEndValueIncl));
-            }
-        }
-*/
-
-        BigDecimal totalDays = new BigDecimal(DAYS.between(adjStartDateIncl, adjEndDateIncl) + 1);
+        BigDecimal totalDays = new BigDecimal(DAYS.between(startDateIncl, endDateIncl) + 1);
 
         BigDecimal flowSum = ZERO;
         BigDecimal weightedFlowSum = ZERO;
         for (Entry<LocalDate, BigDecimal> cashFlow : flows.entrySet()) {
             LocalDate flowDate = cashFlow.getKey();
             BigDecimal flowValue = cashFlow.getValue();
-            Validate.isTrue(!flowDate.isBefore(adjStartDateIncl), () -> "flowDate must not be before adjStartDateIncl, given: %s, %s"
-                    .formatted(flowDate, adjStartDateIncl));
-            Validate.isTrue(!flowDate.isAfter(adjEndDateIncl), () -> "flowDate must not be after adjEndDateIncl, given: %s, %s"
-                    .formatted(flowDate, adjEndDateIncl));
+            Validate.isTrue(!flowDate.isBefore(startDateIncl), () -> "flowDate must not be before startDateIncl, given: %s, %s"
+                    .formatted(flowDate, startDateIncl));
+            Validate.isTrue(!flowDate.isAfter(endDateIncl), () -> "flowDate must not be after endDateIncl, given: %s, %s"
+                    .formatted(flowDate, endDateIncl));
 
-            int cashFlowLagInDays = toIntExact(DAYS.between(adjStartDateIncl, flowDate)) + switch (flowTiming) {
+            int cashFlowLagInDays = toIntExact(DAYS.between(startDateIncl, flowDate)) + switch (flowTiming) {
                 case BEGINNING_OF_DAY -> 0;
                 case END_OF_DAY -> 1;
             };
@@ -144,7 +65,7 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
             flowSum = flowSum.add(flowValue);
             weightedFlowSum = weightedFlowSum.add(weightedCashFlowValue);
         }
-        if (adjStartValueExcl.compareTo(weightedFlowSum.negate()) <= 0) {
+        if (startValueExcl.compareTo(weightedFlowSum.negate()) <= 0) {
             //See https://en.wikipedia.org/wiki/Modified_Dietz_method#Negative_or_zero_average_capital
             throw new CalculationException((
                     "Could not calculate ModifiedDietz return of given data: " +
@@ -152,15 +73,19 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
                     "weightedFlowSum=%s, periodFlow=%s, " +
                     "startDateIncl=%s, endDateIncl=%s")
                     .formatted(
-                            adjStartValueExcl, adjEndValueIncl,
+                            startValueExcl, endValueIncl,
                             weightedFlowSum, flows,
                             startDateIncl, endDateIncl
                     ));
         }
 
-        BigDecimal gain = adjEndValueIncl.subtract(adjStartValueExcl).subtract(flowSum);
-        BigDecimal averageCapital = adjStartValueExcl.add(weightedFlowSum);
+        BigDecimal gain = endValueIncl.subtract(startValueExcl).subtract(flowSum);
+        BigDecimal averageCapital = startValueExcl.add(weightedFlowSum);
 
-        return gain.divide(averageCapital, calcScale, roundingMode);
+        BigDecimal cumulReturn = gain.divide(averageCapital, calcScale, roundingMode);
+        if (cumulReturn.compareTo(Num.MINUS_1) < 0) {
+            cumulReturn = Num.MINUS_1;
+        }
+        return cumulReturn;
     }
 }

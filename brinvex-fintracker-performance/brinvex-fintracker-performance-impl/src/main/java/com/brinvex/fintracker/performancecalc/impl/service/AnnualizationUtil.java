@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
 public class AnnualizationUtil {
@@ -32,6 +33,9 @@ public class AnnualizationUtil {
         }
         if (cumulativeGrowthFactor.compareTo(ZERO) == 0) {
             return ZERO;
+        }
+        if (cumulativeGrowthFactor.compareTo(ONE) == 0) {
+            return cumulativeGrowthFactor;
         }
         LocalDate endDateExcl = endDateIncl.plusDays(1);
         long fullYears = ChronoUnit.YEARS.between(startDateIncl, endDateExcl);
@@ -62,6 +66,9 @@ public class AnnualizationUtil {
         }
         if (cumulativeGrowthFactor.compareTo(ZERO) == 0) {
             return ZERO;
+        }
+        if (cumulativeGrowthFactor.compareTo(ONE) == 0) {
+            return cumulativeGrowthFactor;
         }
         if (annualizationOption == AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR) {
             if (fullYears == 0 || fullYears == 1) {
