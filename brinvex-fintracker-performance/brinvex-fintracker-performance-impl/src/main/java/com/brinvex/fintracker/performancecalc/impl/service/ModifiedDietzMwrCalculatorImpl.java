@@ -22,27 +22,14 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
 
     @Override
     protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
-        return calculateModifiedDietzMwrCumulReturn(
-                calcReq.startDateIncl(),
-                calcReq.endDateIncl(),
-                calcReq.startAssetValueExcl(),
-                calcReq.endAssetValueIncl(),
-                calcReq.flows(),
-                calcReq.flowTiming(),
-                calcReq.calcScale(),
-                calcReq.roundingMode());
-    }
-
-    private static BigDecimal calculateModifiedDietzMwrCumulReturn(
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
-            BigDecimal startValueExcl,
-            BigDecimal endValueIncl,
-            SortedMap<LocalDate, BigDecimal> flows,
-            FlowTiming flowTiming,
-            int calcScale,
-            RoundingMode roundingMode
-    ) {
+        LocalDate startDateIncl = calcReq.startDateIncl();
+        LocalDate endDateIncl = calcReq.endDateIncl();
+        BigDecimal startValueExcl = calcReq.startAssetValueExcl();
+        BigDecimal endValueIncl = calcReq.endAssetValueIncl();
+        SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
+        FlowTiming flowTiming = calcReq.flowTiming();
+        int calcScale = calcReq.calcScale();
+        RoundingMode roundingMode = calcReq.roundingMode();
         BigDecimal totalDays = new BigDecimal(DAYS.between(startDateIncl, endDateIncl) + 1);
 
         BigDecimal flowSum = ZERO;
@@ -88,4 +75,5 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
         }
         return cumulReturn;
     }
+
 }

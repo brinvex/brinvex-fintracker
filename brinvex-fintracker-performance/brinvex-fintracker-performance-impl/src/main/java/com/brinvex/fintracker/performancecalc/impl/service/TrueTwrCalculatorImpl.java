@@ -22,30 +22,15 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
 
     @Override
     protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
-        return calculateTrueTwrCumulReturn(
-                calcReq.startDateIncl(),
-                calcReq.endDateIncl(),
-                calcReq.startAssetValueExcl(),
-                calcReq.endAssetValueIncl(),
-                calcReq.assetValues(),
-                calcReq.flows(),
-                calcReq.flowTiming(),
-                calcReq.calcScale(),
-                calcReq.roundingMode()
-        );
-    }
-
-    private static BigDecimal calculateTrueTwrCumulReturn(
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
-            BigDecimal startAssetValueExcl,
-            BigDecimal endAssetValueIncl,
-            Map<LocalDate, BigDecimal> assetValues,
-            SortedMap<LocalDate, BigDecimal> flows,
-            FlowTiming flowTiming,
-            int calcScale,
-            RoundingMode roundingMode
-    ) {
+        LocalDate startDateIncl = calcReq.startDateIncl();
+        LocalDate endDateIncl = calcReq.endDateIncl();
+        BigDecimal startAssetValueExcl = calcReq.startAssetValueExcl();
+        BigDecimal endAssetValueIncl = calcReq.endAssetValueIncl();
+        Map<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
+        SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
+        FlowTiming flowTiming = calcReq.flowTiming();
+        int calcScale = calcReq.calcScale();
+        RoundingMode roundingMode = calcReq.roundingMode();
 
         BigDecimal cumulFactor = switch (flowTiming) {
             case BEGINNING_OF_DAY -> calculateCumulTwrFactorWithFlowsAtBeginningOfDay(

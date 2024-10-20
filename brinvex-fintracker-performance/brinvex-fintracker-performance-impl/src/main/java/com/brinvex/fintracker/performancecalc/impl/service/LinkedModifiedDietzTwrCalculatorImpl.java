@@ -12,7 +12,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.util.java.CollectionUtil.rangeSafeSubMap;
@@ -31,33 +30,17 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
 
     @Override
     protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
-        return calculateLinkedTwrCumulReturn(
-                modifiedDietzMwrCalculator::calculateReturn,
-                calcReq.startDateIncl(),
-                calcReq.endDateIncl(),
-                calcReq.startAssetValueExcl(),
-                calcReq.endAssetValueIncl(),
-                calcReq.assetValues(),
-                calcReq.flows(),
-                calcReq.largeFlowLevelInPercent(),
-                calcReq.flowTiming(),
-                calcReq.calcScale(),
-                calcReq.roundingMode());
-    }
+        LocalDate startDateIncl = calcReq.startDateIncl();
+        LocalDate endDateIncl = calcReq.endDateIncl();
+        BigDecimal startAssetValueExcl = calcReq.startAssetValueExcl();
+        BigDecimal endAssetValueIncl = calcReq.endAssetValueIncl();
+        Map<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
+        SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
+        int largeFlowLevelInPercent = calcReq.largeFlowLevelInPercent();
+        FlowTiming flowTiming = calcReq.flowTiming();
+        int calcScale = calcReq.calcScale();
+        RoundingMode roundingMode = calcReq.roundingMode();
 
-    private static BigDecimal calculateLinkedTwrCumulReturn(
-            Function<PerfCalcRequest, BigDecimal> subPeriodReturnCalculator,
-            LocalDate startDateIncl,
-            LocalDate endDateIncl,
-            BigDecimal startAssetValueExcl,
-            BigDecimal endAssetValueIncl,
-            Map<LocalDate, BigDecimal> assetValues,
-            SortedMap<LocalDate, BigDecimal> flows,
-            int largeFlowLevelInPercent,
-            FlowTiming flowTiming,
-            int calcScale,
-            RoundingMode roundingMode
-    ) {
         /*
         GIPS Standard
         Provision 22.A.20
@@ -115,7 +98,7 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
                 ).formatted(subPeriodEndDateIncl, largeFlowDate, flowTiming));
             }
 
-            BigDecimal subPeriodFactor = ONE.add(subPeriodReturnCalculator.apply(PerfCalcRequest.builder()
+            BigDecimal subPeriodFactor = ONE.add(modifiedDietzMwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(subPeriodStartDateIncl)
                     .endDateIncl(subPeriodEndDateIncl)
                     .startAssetValueExcl(subPeriodStartValueExcl)
@@ -145,4 +128,5 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
         }
         return cumulTwrFactor.subtract(ONE);
     }
+
 }
