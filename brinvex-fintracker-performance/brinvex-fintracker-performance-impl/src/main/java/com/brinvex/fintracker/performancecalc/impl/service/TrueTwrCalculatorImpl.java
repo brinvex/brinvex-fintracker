@@ -214,7 +214,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             {
                 subPeriodStartDateIncl = subPeriodEndDateIncl.plusDays(1);
                 if (i < periodCount) {
-                    flows = rangeSafeTailMap(flows, subPeriodStartDateIncl.plusDays(1));
+                    flows = rangeSafeTailMap(flows, subPeriodStartDateIncl);
                 }
             }
         }

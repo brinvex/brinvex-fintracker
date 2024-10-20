@@ -14,6 +14,7 @@ import java.util.List;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
+import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.END_OF_DAY;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -188,6 +189,28 @@ class TrueTwrCalculatorTest {
 
     }
 
+    @Test
+    void twr3() {
+        BigDecimal ret13 = trueTwrCalculator.calculateReturn(PerfCalcRequest.builder()
+                .startDateIncl(parse("2023-01-01"))
+                .endDateIncl(parse("2024-12-31"))
+                .startAssetValueExcl(new BigDecimal("1000.00"))
+                .endAssetValueIncl(new BigDecimal("1030.00"))
+                .annualization(DO_NOT_ANNUALIZE)
+                .flowTiming(END_OF_DAY)
+                .assetValues(List.of(
+                        new DateAmount(parse("2023-01-03"), new BigDecimal("1010")),
+                        new DateAmount(parse("2023-01-04"), new BigDecimal("1030"))
+                ))
+                .flows(List.of(
+                        new DateAmount(parse("2023-01-03"), new BigDecimal("10")),
+                        new DateAmount(parse("2023-01-04"), new BigDecimal("20"))
+                ))
+                .build());
+        assertEquals("0.000000", ret13.toPlainString());
+
+    }
+
     /*
      * https://en.wikipedia.org/wiki/Time-weighted_return#Example_1
      */
@@ -208,5 +231,6 @@ class TrueTwrCalculatorTest {
                 .build();
         assertEquals("0.50", trueTwrCalculator.calculateReturn(twrReq1).toPlainString());
     }
+
 
 }

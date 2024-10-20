@@ -207,14 +207,24 @@ public final class PerfAnalysisRequest {
         }
 
         @Tolerate
-        public PerfAnalysisRequestBuilder assetValues(Map<LocalDate, BigDecimal> assetValues) {
+        public PerfAnalysisRequestBuilder assetValues(Function<LocalDate, BigDecimal> assetValues) {
+            this.assetValuesProvider = assetValues;
+            this.assetValuesMap = null;
             this.assetValuesCollection = null;
+            return this;
+        }
+
+        @Tolerate
+        public PerfAnalysisRequestBuilder assetValues(Map<LocalDate, BigDecimal> assetValues) {
+            this.assetValuesProvider = null;
             this.assetValuesMap = assetValues;
+            this.assetValuesCollection = null;
             return this;
         }
 
         @Tolerate
         public PerfAnalysisRequestBuilder assetValues(Collection<DateAmount> assetValues) {
+            this.assetValuesProvider = null;
             this.assetValuesMap = null;
             this.assetValuesCollection = assetValues;
             return this;
