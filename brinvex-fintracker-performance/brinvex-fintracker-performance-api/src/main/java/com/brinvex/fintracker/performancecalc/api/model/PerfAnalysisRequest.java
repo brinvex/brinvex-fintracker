@@ -18,8 +18,8 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.function.Function;
 
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSortedMap;
 
 @Getter
@@ -30,7 +30,7 @@ public final class PerfAnalysisRequest {
     private final LocalDate analysisEndDateIncl;
     private final LocalDate investmentStartDateIncl;
     private final LocalDate investmentEndDateIncl;
-    private final Map<LocalDate, BigDecimal> assetValues;
+    private final Function<LocalDate, BigDecimal> assetValues;
     private final SortedMap<LocalDate, BigDecimal> flows;
     private final FlowTiming flowTiming;
     private final Class<? extends TwrCalculator> twrCalculatorType;
@@ -57,6 +57,7 @@ public final class PerfAnalysisRequest {
             PeriodUnit resultPeriodUnit,
             LocalDate analysisStartDateIncl,
             LocalDate analysisEndDateIncl, LocalDate investmentStartDateIncl, LocalDate investmentEndDateIncl,
+            Function<LocalDate, BigDecimal> assetValuesProvider,
             Map<LocalDate, BigDecimal> assetValuesMap,
             Collection<DateAmount> assetValuesCollection,
             Map<LocalDate, BigDecimal> flowsMap,
@@ -123,12 +124,13 @@ public final class PerfAnalysisRequest {
         LocalDate startDateIncl = this.analysisStartDateIncl.isAfter(this.investmentStartDateIncl) ? this.analysisStartDateIncl : this.investmentStartDateIncl;
         LocalDate endDateIncl = this.analysisEndDateIncl.isBefore(this.investmentEndDateIncl) ? this.analysisEndDateIncl : this.investmentEndDateIncl;
 
-        this.assetValues = unmodifiableMap(PerfCalcRequest.sanitizeAssetValues(
+        this.assetValues = PerfCalcRequest.sanitizeAssetValues(
+                assetValuesProvider,
                 assetValuesMap,
                 assetValuesCollection,
                 startDateIncl,
                 endDateIncl
-        ));
+        );
 
         this.flows = unmodifiableSortedMap(PerfCalcRequest.sanitizeFlows(
                 flowsMap,
@@ -167,6 +169,8 @@ public final class PerfAnalysisRequest {
         private LocalDate analysisEndDateIncl;
         private LocalDate investmentStartDateIncl;
         private LocalDate investmentEndDateIncl;
+        @Setter(AccessLevel.NONE)
+        private Function<LocalDate, BigDecimal> assetValuesProvider;
         @Setter(AccessLevel.NONE)
         private Map<LocalDate, BigDecimal> assetValuesMap;
         @Setter(AccessLevel.NONE)
@@ -251,6 +255,7 @@ public final class PerfAnalysisRequest {
                     analysisEndDateIncl,
                     investmentStartDateIncl,
                     investmentEndDateIncl,
+                    assetValuesProvider,
                     assetValuesMap,
                     assetValuesCollection,
                     flowsMap,

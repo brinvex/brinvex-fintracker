@@ -12,7 +12,6 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 
 import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeReturn;
-import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
 public abstract class BaseCalculatorImpl implements PerformanceCalculator {

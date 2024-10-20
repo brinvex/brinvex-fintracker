@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.util.java.CollectionUtil.rangeSafeSubMap;
@@ -34,7 +35,7 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
         LocalDate endDateIncl = calcReq.endDateIncl();
         BigDecimal startAssetValueExcl = calcReq.startAssetValueExcl();
         BigDecimal endAssetValueIncl = calcReq.endAssetValueIncl();
-        Map<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
+        Function<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
         SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
         int largeFlowLevelInPercent = calcReq.largeFlowLevelInPercent();
         FlowTiming flowTiming = calcReq.flowTiming();
@@ -60,7 +61,7 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
         SortedMap<LocalDate, BigDecimal> iterativeForwardFlows = flows;
         while (!subPeriodStartDateIncl.isAfter(endDateIncl)) {
             LocalDate subPeriodStartDateExcl = subPeriodStartDateIncl.minusDays(1);
-            BigDecimal subPeriodStartValueExcl = subPeriodStartDateIncl == startDateIncl ? startAssetValueExcl : assetValues.get(subPeriodStartDateExcl);
+            BigDecimal subPeriodStartValueExcl = subPeriodStartDateIncl == startDateIncl ? startAssetValueExcl : assetValues.apply(subPeriodStartDateExcl);
             if (subPeriodStartValueExcl == null) {
                 throw new IllegalArgumentException("subPeriodStartValueExcl must not be null, missing assetValue for subPeriodStartDateExcl=%s"
                         .formatted(subPeriodStartDateExcl));
@@ -90,7 +91,7 @@ public class LinkedModifiedDietzTwrCalculatorImpl extends BaseCalculatorImpl imp
                 }
             }
 
-            BigDecimal subPeriodEndValueIncl = subPeriodEndDateIncl == endDateIncl ? endAssetValueIncl : assetValues.get(subPeriodEndDateIncl);
+            BigDecimal subPeriodEndValueIncl = subPeriodEndDateIncl == endDateIncl ? endAssetValueIncl : assetValues.apply(subPeriodEndDateIncl);
             if (subPeriodEndValueIncl == null) {
                 throw new IllegalArgumentException((
                         "subPeriodEndValueIncl must not be null, missing assetValue for endDateIncl=%s, " +

@@ -73,7 +73,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         boolean calculateTrailingTwr5Y = req.calculateTrailingTwr5Y();
         boolean calculateTrailingTwr10Y = req.calculateTrailingTwr10Y();
         SortedMap<LocalDate, BigDecimal> flows = req.flows();
-        Map<LocalDate, BigDecimal> assetValues = req.assetValues();
+        Function<LocalDate, BigDecimal> assetValues = req.assetValues();
         SortedMap<LocalDate, BigDecimal> incomes = req.incomes();
 
         LocalDate calcStartDateIncl = maxDate(analysisStartDateIncl, req.investmentStartDateIncl());
@@ -114,7 +114,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
             LimitedLinkedMap<LocalDate, BigDecimal> trailingTwrFactors5Y = new LimitedLinkedMap<>(periodFrequencyPerYears5);
             LimitedLinkedMap<LocalDate, BigDecimal> trailingTwrFactors10Y = new LimitedLinkedMap<>(periodFrequencyPerYears10);
 
-            BigDecimal startValueExcl = assetValues.get(calcStartDateExcl);
+            BigDecimal startValueExcl = assetValues.apply(calcStartDateExcl);
             Validate.notNull(startValueExcl, () -> "startValueExcl must not be null, missing assetValue for calcStartDateExcl=%s"
                     .formatted(calcStartDateExcl));
             BigDecimal cumulTwrFactor = ONE;
@@ -126,10 +126,10 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 LocalDate periodStartDateExcl = periodStartDateIncl.minusDays(1);
                 LocalDate periodEndDateIncl = minDate(periodUnit.adjEndDateIncl(periodStartDateIncl), calcEndDateIncl);
                 LocalDate periodEndDateExcl = periodEndDateIncl.plusDays(1);
-                BigDecimal periodStartValueExcl = periodStartDateIncl.isEqual(calcStartDateIncl) ? startValueExcl : assetValues.get(periodStartDateExcl);
+                BigDecimal periodStartValueExcl = periodStartDateIncl.isEqual(calcStartDateIncl) ? startValueExcl : assetValues.apply(periodStartDateExcl);
                 Validate.notNull(periodStartValueExcl, () -> "periodStartValueExcl must not be null, missing assetValue for periodStartDateExcl=%s"
                         .formatted(periodStartDateExcl));
-                BigDecimal periodEndValueIncl = assetValues.get(periodEndDateIncl);
+                BigDecimal periodEndValueIncl = assetValues.apply(periodEndDateIncl);
                 Validate.notNull(periodEndValueIncl, () -> "periodEndValueIncl must not be null, missing assetValue for periodEndDateIncl=%s"
                         .formatted(periodEndDateIncl));
 

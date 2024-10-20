@@ -15,10 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptySortedMap;
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSortedMap;
 import static java.util.stream.Collectors.toMap;
 
@@ -29,7 +29,7 @@ public final class PerfCalcRequest {
     private final LocalDate endDateIncl;
     private final BigDecimal startAssetValueExcl;
     private final BigDecimal endAssetValueIncl;
-    private final Map<LocalDate, BigDecimal> assetValues;
+    private final Function<LocalDate, BigDecimal> assetValues;
     private final SortedMap<LocalDate, BigDecimal> flows;
     private final int largeFlowLevelInPercent;
     private final FlowTiming flowTiming;
@@ -44,6 +44,7 @@ public final class PerfCalcRequest {
             LocalDate endDateIncl,
             BigDecimal startAssetValueExcl,
             BigDecimal endAssetValueIncl,
+            Function<LocalDate, BigDecimal> assetValuesProvider,
             Map<LocalDate, BigDecimal> assetValuesMap,
             Collection<DateAmount> assetValuesCollection,
             Map<LocalDate, BigDecimal> flowsMap,
@@ -90,12 +91,13 @@ public final class PerfCalcRequest {
         this.resultScale = resultScale == null ? 6 : resultScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
 
-        this.assetValues = unmodifiableMap(sanitizeAssetValues(
+        this.assetValues = sanitizeAssetValues(
+                assetValuesProvider,
                 assetValuesMap,
                 assetValuesCollection,
                 startDateIncl,
                 endDateIncl
-        ));
+        );
 
         this.flows = unmodifiableSortedMap(sanitizeFlows(
                 flowsMap,
@@ -123,7 +125,7 @@ public final class PerfCalcRequest {
         builder.resultInPercent = resultInPercent;
         builder.calcScale = calcScale;
         builder.resultScale = resultScale;
-        builder.assetValuesMap = assetValues;
+        builder.assetValuesProvider = assetValues;
         builder.flowsMap = flows;
         builder.roundingMode = roundingMode;
         return builder;
@@ -137,6 +139,8 @@ public final class PerfCalcRequest {
         private LocalDate endDateIncl;
         private BigDecimal startAssetValueExcl;
         private BigDecimal endAssetValueIncl;
+        @Setter(AccessLevel.NONE)
+        private Function<LocalDate, BigDecimal> assetValuesProvider;
         @Setter(AccessLevel.NONE)
         private Map<LocalDate, BigDecimal> assetValuesMap;
         @Setter(AccessLevel.NONE)
@@ -157,14 +161,24 @@ public final class PerfCalcRequest {
         }
 
         @Tolerate
-        public PerfCalcRequestBuilder assetValues(Map<LocalDate, BigDecimal> assetValues) {
+        public PerfCalcRequestBuilder assetValues(Function<LocalDate, BigDecimal> assetValues) {
+            this.assetValuesProvider = assetValues;
+            this.assetValuesMap = null;
             this.assetValuesCollection = null;
+            return this;
+        }
+
+        @Tolerate
+        public PerfCalcRequestBuilder assetValues(Map<LocalDate, BigDecimal> assetValues) {
+            this.assetValuesProvider = null;
             this.assetValuesMap = assetValues;
+            this.assetValuesCollection = null;
             return this;
         }
 
         @Tolerate
         public PerfCalcRequestBuilder assetValues(Collection<DateAmount> assetValues) {
+            this.assetValuesProvider = null;
             this.assetValuesMap = null;
             this.assetValuesCollection = assetValues;
             return this;
@@ -190,6 +204,7 @@ public final class PerfCalcRequest {
                     endDateIncl,
                     startAssetValueExcl,
                     endAssetValueIncl,
+                    assetValuesProvider,
                     assetValuesMap,
                     assetValuesCollection,
                     flowsMap,
@@ -215,6 +230,7 @@ public final class PerfCalcRequest {
             copy.resultInPercent = resultInPercent;
             copy.calcScale = calcScale;
             copy.resultScale = resultScale;
+            copy.assetValuesProvider = assetValuesProvider;
             copy.assetValuesMap = assetValuesMap;
             copy.assetValuesCollection = assetValuesCollection;
             copy.flowsMap = flowsMap;
@@ -224,21 +240,27 @@ public final class PerfCalcRequest {
         }
     }
 
-    static Map<LocalDate, BigDecimal> sanitizeAssetValues(Map<LocalDate, BigDecimal> assetValuesMap, Collection<DateAmount> assetValuesCollection, LocalDate startDateIncl, LocalDate endDateIncl) {
-        Map<LocalDate, BigDecimal> sanitizedAssetValues;
-        if (assetValuesMap instanceof HashMap) {
-            sanitizedAssetValues = assetValuesMap;
+    static Function<LocalDate, BigDecimal> sanitizeAssetValues(
+            Function<LocalDate, BigDecimal> assetValuesProvider,
+            Map<LocalDate, BigDecimal> assetValuesMap,
+            Collection<DateAmount> assetValuesCollection,
+            LocalDate startDateIncl,
+            LocalDate endDateIncl
+    ) {
+        Function<LocalDate, BigDecimal> sanitizedAssetValues;
+        if (assetValuesProvider != null) {
+            sanitizedAssetValues = assetValuesProvider;
+        } else if (assetValuesMap != null) {
+            sanitizedAssetValues = assetValuesMap::get;
         } else {
-            sanitizedAssetValues = new HashMap<>();
-            if (assetValuesMap != null) {
-                sanitizedAssetValues.putAll(assetValuesMap);
-            } else if (assetValuesCollection != null) {
+            HashMap<LocalDate, BigDecimal> sanitizedAssetValuesMap = new HashMap<>();
+            if (assetValuesCollection != null) {
                 LocalDate startDateExcl = startDateIncl.minusDays(1);
                 for (DateAmount dateAssetValue : assetValuesCollection) {
                     LocalDate date = dateAssetValue.date();
                     BigDecimal assetValue = dateAssetValue.amount();
                     if (!date.isBefore(startDateExcl) && !date.isAfter(endDateIncl)) {
-                        BigDecimal oldAssetValue = sanitizedAssetValues.put(date, assetValue);
+                        BigDecimal oldAssetValue = sanitizedAssetValuesMap.put(date, assetValue);
                         if (oldAssetValue != null && oldAssetValue.compareTo(assetValue) != 0) {
                             throw new IllegalArgumentException((
                                     "The assetValues collection must not contain different entries for the same date; " +
@@ -248,6 +270,7 @@ public final class PerfCalcRequest {
                     }
                 }
             }
+            sanitizedAssetValues = sanitizedAssetValuesMap::get;
         }
         return sanitizedAssetValues;
     }

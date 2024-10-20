@@ -8,9 +8,9 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.function.Function;
 
 import static com.brinvex.util.java.CollectionUtil.rangeSafeHeadMap;
 import static com.brinvex.util.java.CollectionUtil.rangeSafeTailMap;
@@ -26,7 +26,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
         LocalDate endDateIncl = calcReq.endDateIncl();
         BigDecimal startAssetValueExcl = calcReq.startAssetValueExcl();
         BigDecimal endAssetValueIncl = calcReq.endAssetValueIncl();
-        Map<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
+        Function<LocalDate, BigDecimal> assetValues = calcReq.assetValues();
         SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
         FlowTiming flowTiming = calcReq.flowTiming();
         int calcScale = calcReq.calcScale();
@@ -62,7 +62,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             LocalDate endDateIncl,
             BigDecimal startAssetValueExcl,
             BigDecimal endAssetValueIncl,
-            Map<LocalDate, BigDecimal> assetValues,
+            Function<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             int calcScale,
             RoundingMode roundingMode
@@ -89,7 +89,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             if (i == 1) {
                 subPeriodStartValue = startAssetValueExcl;
             } else {
-                subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
+                subPeriodStartValue = assetValues.apply(subPeriodStartDateExcl);
 
                 Validate.notNull(subPeriodStartValue,
                         () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
@@ -99,7 +99,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
                 subPeriodEndValue = endAssetValueIncl;
             } else {
                 subPeriodEndDateIncl = flows.firstKey().minusDays(1);
-                subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
+                subPeriodEndValue = assetValues.apply(subPeriodEndDateIncl);
 
                 Validate.notNull(subPeriodEndValue,
                         () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
@@ -143,7 +143,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             LocalDate endDateIncl,
             BigDecimal startAssetValueExcl,
             BigDecimal endAssetValueIncl,
-            Map<LocalDate, BigDecimal> assetValues,
+            Function<LocalDate, BigDecimal> assetValues,
             SortedMap<LocalDate, BigDecimal> flows,
             int calcScale,
             RoundingMode roundingMode
@@ -170,7 +170,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
             if (i == 1) {
                 subPeriodStartValue = startAssetValueExcl;
             } else {
-                subPeriodStartValue = assetValues.get(subPeriodStartDateExcl);
+                subPeriodStartValue = assetValues.apply(subPeriodStartDateExcl);
 
                 Validate.notNull(subPeriodStartValue,
                         () -> "subPeriodStartValue must not be null, missing assetValue for subPeriodStartDateExcl %s".formatted(subPeriodStartDateExcl));
@@ -183,7 +183,7 @@ public class TrueTwrCalculatorImpl extends BaseCalculatorImpl implements Perform
                 Entry<LocalDate, BigDecimal> flowEntry = flows.firstEntry();
                 flow = flowEntry.getValue();
                 subPeriodEndDateIncl = flowEntry.getKey();
-                subPeriodEndValue = assetValues.get(subPeriodEndDateIncl);
+                subPeriodEndValue = assetValues.apply(subPeriodEndDateIncl);
 
                 Validate.notNull(subPeriodEndValue,
                         () -> "subPeriodEndValue must not be null, missing assetValue for subPeriodEndDateIncl %s".formatted(subPeriodEndDateIncl));
