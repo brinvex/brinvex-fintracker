@@ -372,4 +372,58 @@ class PerformanceCalculatorTest {
         assertTrue(ret2.compareTo(ret4) < 0, () -> "ret2=%s, ret4=%s".formatted(ret2, ret4));
     }
 
+    /*
+     * https://www.interactivebrokers.com/images/common/Statements/MWR-TWR_white_paper.pdf
+     */
+    @Test
+    void mDietz_ibkr_mwr() {
+        PerfCalcRequestBuilder req = PerfCalcRequest.builder()
+                .startDateIncl(parse("2011-10-01"))
+                .endDateIncl(parse("2011-10-31"))
+                .startAssetValueExcl(new BigDecimal("4549863.44"))
+                .endAssetValueIncl(new BigDecimal("4256598.99"))
+                .flows(List.of(
+                        new DateAmount(parse("2011-10-04"), new BigDecimal("-225000")),
+                        new DateAmount(parse("2011-10-07"), new BigDecimal("81500")),
+                        new DateAmount(parse("2011-10-12"), new BigDecimal("-75000")),
+                        new DateAmount(parse("2011-10-14"), new BigDecimal("125000")),
+                        new DateAmount(parse("2011-10-20"), new BigDecimal("7500"))))
+                .flowTiming(END_OF_DAY)
+                .resultInPercent(true)
+                .resultScale(2)
+                .annualization(DO_NOT_ANNUALIZE);
+
+        BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(req.copy().build());
+        assertEquals("-4.67", ret1.toPlainString());
+    }
+
+    /*
+     * https://www.interactivebrokers.com/images/common/Statements/MWR-TWR_white_paper.pdf
+     */
+    @Test
+    void mDietz_ibkr_twr() {
+        PerfCalcRequestBuilder req = PerfCalcRequest.builder()
+                .startDateIncl(parse("2011-10-03"))
+                .endDateIncl(parse("2011-10-07"))
+                .startAssetValueExcl(new BigDecimal("4549863.44"))
+                .endAssetValueIncl(new BigDecimal("4417916.19"))
+                .assetValues(List.of(
+                        new DateAmount(parse("2011-10-03"), new BigDecimal("4629129.14")),
+                        new DateAmount(parse("2011-10-04"), new BigDecimal("4197829.64")),
+                        new DateAmount(parse("2011-10-05"), new BigDecimal("4278627.55")),
+                        new DateAmount(parse("2011-10-06"), new BigDecimal("4249124.71"))
+                ))
+                .flows(List.of(
+                        new DateAmount(parse("2011-10-04"), new BigDecimal("-225000")),
+                        new DateAmount(parse("2011-10-07"), new BigDecimal("81500"))
+                ))
+                .flowTiming(BEGINNING_OF_DAY)
+                .resultInPercent(true)
+                .resultScale(2)
+                .annualization(DO_NOT_ANNUALIZE);
+
+        BigDecimal ret1 = trueTwrCalculator.calculateReturn(req.copy().build());
+        assertEquals("0.14", ret1.toPlainString());
+    }
+
 }

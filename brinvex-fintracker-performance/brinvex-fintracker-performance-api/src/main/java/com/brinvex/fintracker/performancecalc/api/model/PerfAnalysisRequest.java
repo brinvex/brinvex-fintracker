@@ -32,15 +32,16 @@ public final class PerfAnalysisRequest {
     private final LocalDate investmentEndDateIncl;
     private final Function<LocalDate, BigDecimal> assetValues;
     private final SortedMap<LocalDate, BigDecimal> flows;
-    private final FlowTiming flowTiming;
+    private final FlowTiming twrFlowTiming;
+    private final FlowTiming mwrFlowTiming;
     private final Class<? extends TwrCalculator> twrCalculatorType;
     private final Class<? extends MwrCalculator> mwrCalculatorType;
     private final int largeFlowLevelInPercent;
     private final boolean resultRatesInPercent;
     private final int calcScale;
-    private final int resultScale;
+    private final int resultRateScale;
+    private final int resultAmountScale;
     private final RoundingMode roundingMode;
-    private final boolean calculatePeriodMwr;
     private final boolean calculateMwr;
     private final boolean calculateTrailingAvgProfit1Y;
     private final boolean calculateTrailingAvgFlow1Y;
@@ -64,13 +65,15 @@ public final class PerfAnalysisRequest {
             Collection<DateAmount> flowsCollection,
             Class<? extends TwrCalculator> twrCalculatorType,
             Class<? extends MwrCalculator> mwrCalculatorType,
-            FlowTiming flowTiming,
+            FlowTiming twrFlowTiming,
+            FlowTiming mwrFlowTiming,
             Integer largeFlowLevelInPercent,
             Boolean resultRatesInPercent,
             Integer calcScale,
-            Integer resultScale,
+            Integer resultRateScale,
+            Integer resultAmountScale,
             RoundingMode roundingMode,
-            Boolean calculateMwr, Boolean calculatePeriodMwr,
+            Boolean calculateMwr,
             Boolean calculateTrailingAvgProfit1Y,
             Boolean calculateTrailingAvgFlow1Y,
             Boolean calculatePeriodIncome,
@@ -101,15 +104,16 @@ public final class PerfAnalysisRequest {
         this.investmentStartDateIncl = investmentStartDateIncl == null ? analysisStartDateIncl : investmentStartDateIncl;
         this.investmentEndDateIncl = investmentEndDateIncl == null ? analysisEndDateIncl : investmentEndDateIncl;
         this.resultPeriodUnit = resultPeriodUnit == null ? PeriodUnit.MONTH : resultPeriodUnit;
-        this.flowTiming = flowTiming == null ? FlowTiming.BEGINNING_OF_DAY : flowTiming;
+        this.twrFlowTiming = twrFlowTiming == null ? FlowTiming.BEGINNING_OF_DAY : twrFlowTiming;
+        this.mwrFlowTiming = mwrFlowTiming == null ? FlowTiming.BEGINNING_OF_DAY : mwrFlowTiming;
         this.twrCalculatorType = twrCalculatorType == null ? TrueTwrCalculator.class : twrCalculatorType;
         this.mwrCalculatorType = mwrCalculatorType == null ? ModifiedDietzMwrCalculator.class : mwrCalculatorType;
         this.resultRatesInPercent = resultRatesInPercent != null && resultRatesInPercent;
         this.largeFlowLevelInPercent = largeFlowLevelInPercent == null ? 5 : largeFlowLevelInPercent;
         this.calcScale = calcScale == null ? 20 : calcScale;
-        this.resultScale = resultScale == null ? 6 : resultScale;
+        this.resultRateScale = resultRateScale == null ? 6 : resultRateScale;
+        this.resultAmountScale = resultAmountScale == null ? 2 : resultAmountScale;
         this.roundingMode = roundingMode == null ? RoundingMode.HALF_UP : roundingMode;
-        this.calculatePeriodMwr = calculatePeriodMwr != null && calculatePeriodMwr;
         this.calculateMwr = calculateMwr != null && calculateMwr;
         this.calculateTrailingAvgProfit1Y = calculateTrailingAvgProfit1Y != null && calculateTrailingAvgProfit1Y;
         this.calculateTrailingAvgFlow1Y = calculateTrailingAvgFlow1Y != null && calculateTrailingAvgFlow1Y;
@@ -183,16 +187,17 @@ public final class PerfAnalysisRequest {
         private Map<LocalDate, BigDecimal> incomesMap;
         @Setter(AccessLevel.NONE)
         private Collection<DateAmount> incomesCollection;
-        private FlowTiming flowTiming;
+        private FlowTiming twrFlowTiming;
+        private FlowTiming mwrFlowTiming;
         private Class<? extends TwrCalculator> twrCalculatorType;
         private Class<? extends MwrCalculator> mwrCalculatorType;
         private Integer largeFlowLevelInPercent;
         private Boolean resultRatesInPercent;
         private Integer calcScale;
-        private Integer resultScale;
+        private Integer resultRateScale;
+        private Integer resultAmountScale;
         private RoundingMode roundingMode;
         private Boolean calculateMwr;
-        private Boolean calculatePeriodMwr;
         private Boolean calculateTrailingAvgProfit1Y;
         private Boolean calculateTrailingAvgFlow1Y;
         private Boolean calculatePeriodIncome;
@@ -204,6 +209,18 @@ public final class PerfAnalysisRequest {
         private Boolean calculateTrailingTwr10Y;
 
         private PerfAnalysisRequestBuilder() {
+        }
+
+        public PerfAnalysisRequestBuilder flowTiming(FlowTiming flowTiming) {
+            this.twrFlowTiming = flowTiming;
+            this.mwrFlowTiming = flowTiming;
+            return this;
+        }
+
+        public PerfAnalysisRequestBuilder resultScale(int scale) {
+            this.resultRateScale = scale;
+            this.resultAmountScale = scale;
+            return this;
         }
 
         @Tolerate
@@ -272,14 +289,15 @@ public final class PerfAnalysisRequest {
                     flowsCollection,
                     twrCalculatorType,
                     mwrCalculatorType,
-                    flowTiming,
+                    twrFlowTiming,
+                    mwrFlowTiming,
                     largeFlowLevelInPercent,
                     resultRatesInPercent,
                     calcScale,
-                    resultScale,
+                    resultRateScale,
+                    resultAmountScale,
                     roundingMode,
                     calculateMwr,
-                    calculatePeriodMwr,
                     calculateTrailingAvgProfit1Y,
                     calculateTrailingAvgFlow1Y,
                     calculatePeriodIncome,

@@ -16,6 +16,7 @@ import java.util.List;
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
+import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.END_OF_DAY;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +33,7 @@ class ModifiedDietzMwrCalculatorTest {
     private final static ModifiedDietzMwrCalculator modifiedDietzMwrCalculator = perfModule.modifiedDietzMwrCalculator();
 
     @Test
-    void dietz_readmeExample() {
+    void mDietz_readmeExample() {
         ModifiedDietzMwrCalculator mwrCalculator = finTracker.get(PerformanceModule.class)
                 .modifiedDietzMwrCalculator();
         BigDecimal mwrReturn = mwrCalculator.calculateReturn(PerfCalcRequest.builder()
@@ -58,7 +59,7 @@ class ModifiedDietzMwrCalculatorTest {
      * Provision 22.A.21
      */
     @Test
-    void dietz_Gips1() {
+    void mDietz_Gips1() {
         PerfCalcRequestBuilder calcReqBuilder = PerfCalcRequest.builder()
                 .startDateIncl(parse("2020-06-01"))
                 .endDateIncl(parse("2020-06-30"))
@@ -90,7 +91,7 @@ class ModifiedDietzMwrCalculatorTest {
      * Provision 22.A.21
      */
     @Test
-    void dietz_Gips2() {
+    void mDietz_Gips2() {
         PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                 .startDateIncl(parse("2020-06-01"))
                 .endDateIncl(parse("2020-06-11"))
@@ -122,7 +123,7 @@ class ModifiedDietzMwrCalculatorTest {
      * Provision 22.A.21
      */
     @Test
-    void dietz_Gips3() {
+    void mDietz_Gips3() {
         PerfCalcRequestBuilder mwrReq1 = PerfCalcRequest.builder()
                 .startDateIncl(parse("2020-06-12"))
                 .endDateIncl(parse("2020-06-30"))
@@ -149,7 +150,7 @@ class ModifiedDietzMwrCalculatorTest {
      * Provision 22.A.23
      */
     @Test
-    void dietz_Gips4() {
+    void mDietz_Gips4() {
         PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                 .startDateIncl(parse("2017-01-01"))
                 .endDateIncl(parse("2020-12-31"))
@@ -202,7 +203,7 @@ class ModifiedDietzMwrCalculatorTest {
      * https://en.wikipedia.org/wiki/Modified_Dietz_method
      */
     @Test
-    void dietz_Wikipedia1() {
+    void mDietz_Wikipedia1() {
         PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                 .startDateIncl(parse("2022-01-01"))
                 .endDateIncl(parse("2023-12-31"))
@@ -229,7 +230,7 @@ class ModifiedDietzMwrCalculatorTest {
      * https://en.wikipedia.org/wiki/Modified_Dietz_method
      */
     @Test
-    void dietz_Wikipedia2() {
+    void mDietz_Wikipedia2() {
         {
             PerfCalcRequestBuilder mwrReq = PerfCalcRequest.builder()
                     .startDateIncl(parse("2016-01-01"))
@@ -261,7 +262,7 @@ class ModifiedDietzMwrCalculatorTest {
      * https://en.wikipedia.org/wiki/Modified_Dietz_method
      */
     @Test
-    void dietz_Wikipedia4() {
+    void mDietz_Wikipedia4() {
         assertThrows(CalculationException.class, () -> modifiedDietzMwrCalculator.calculateReturn(PerfCalcRequest.builder()
                 .startDateIncl(parse("2016-01-01"))
                 .endDateIncl(parse("2016-01-01").plusDays(39))
@@ -278,7 +279,7 @@ class ModifiedDietzMwrCalculatorTest {
      * https://canadianportfoliomanagerblog.com/calculating-your-modified-dietz-rate-of-return/
      */
     @Test
-    void dietz_CanadianPortfolioManager() {
+    void mDietz_CanadianPortfolioManager() {
         {
             BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(parse("2020-01-01"))
@@ -321,7 +322,7 @@ class ModifiedDietzMwrCalculatorTest {
     }
 
     @Test
-    void dietz_cornerCases() {
+    void mDietz_cornerCases() {
         {
             BigDecimal ret1 = modifiedDietzMwrCalculator.calculateReturn(PerfCalcRequest.builder()
                     .startDateIncl(parse("2020-01-01"))
@@ -349,7 +350,7 @@ class ModifiedDietzMwrCalculatorTest {
     }
 
     @Test
-    void dietz_flowWeightsIrrelevantIfGainIsZero() {
+    void mDietz_flowWeightsIrrelevantIfGainIsZero() {
         PerfCalcRequestBuilder req = PerfCalcRequest.builder()
                 .startDateIncl(parse("2021-02-01"))
                 .endDateIncl(parse("2021-02-28"))
@@ -379,3 +380,4 @@ class ModifiedDietzMwrCalculatorTest {
         assertEquals(0, ret1.compareTo(ret3));
     }
 }
+

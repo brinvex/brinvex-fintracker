@@ -12,6 +12,7 @@ import java.util.List;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.DO_NOT_ANNUALIZE;
 import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINNING_OF_DAY;
+import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.END_OF_DAY;
 import static java.time.LocalDate.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

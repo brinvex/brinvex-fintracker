@@ -50,16 +50,17 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         this.mwrCalculatorProvider = mwrCalculatorProvider;
     }
 
-    @SuppressWarnings("DataFlowIssue")
     @Override
     public SequencedCollection<PerfAnalysis> analyzePerformance(PerfAnalysisRequest req) {
         PeriodUnit periodUnit = req.resultPeriodUnit();
         LocalDate analysisStartDateIncl = req.analysisStartDateIncl();
         LocalDate analysisEndDateIncl = req.analysisEndDateIncl();
-        FlowTiming flowTiming = req.flowTiming();
+        FlowTiming twrFlowTiming = req.twrFlowTiming();
+        FlowTiming mwrFlowTiming = req.mwrFlowTiming();
         boolean resultRatesInPct = req.resultRatesInPercent();
         int calcScale = req.calcScale();
-        int resultScale = req.resultScale();
+        int resultRateScale = req.resultRateScale();
+        int resultAmountScale = req.resultAmountScale();
         RoundingMode roundingMode = req.roundingMode();
         TwrCalculator twrCalculator = twrCalculatorProvider.apply(req.twrCalculatorType());
         MwrCalculator mwrCalculator = mwrCalculatorProvider.apply(req.mwrCalculatorType());
@@ -136,43 +137,58 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 SortedMap<LocalDate, BigDecimal> periodFlows = rangeSafeHeadMap(iterativeForwardFlows, periodEndDateExcl);
 
                 BigDecimal periodTwr;
-                PerfCalcRequest periodPerfCalcReq;
-
-                BigDecimal adjPeriodStartValueExcl = periodStartValueExcl;
-                SortedMap<LocalDate, BigDecimal> adjPeriodFlows = periodFlows;
-                if (!periodFlows.isEmpty()) {
-                    if (flowTiming == BEGINNING_OF_DAY) {
-                        Map.Entry<LocalDate, BigDecimal> firstFlowEntry = periodFlows.firstEntry();
-                        LocalDate firstFlowDate = firstFlowEntry.getKey();
-                        if (firstFlowDate.isEqual(periodStartDateIncl)) {
-                            adjPeriodStartValueExcl = periodStartValueExcl.add(firstFlowEntry.getValue());
-                            adjPeriodFlows = CollectionUtil.rangeSafeTailMap(flows, firstFlowDate.plusDays(1));
+                {
+                    BigDecimal adjPeriodStartValueExcl = periodStartValueExcl;
+                    SortedMap<LocalDate, BigDecimal> adjPeriodFlows = periodFlows;
+                    if (!periodFlows.isEmpty()) {
+                        if (twrFlowTiming == BEGINNING_OF_DAY) {
+                            Map.Entry<LocalDate, BigDecimal> firstFlowEntry = periodFlows.firstEntry();
+                            LocalDate firstFlowDate = firstFlowEntry.getKey();
+                            if (firstFlowDate.isEqual(periodStartDateIncl)) {
+                                adjPeriodStartValueExcl = periodStartValueExcl.add(firstFlowEntry.getValue());
+                                adjPeriodFlows = CollectionUtil.rangeSafeTailMap(flows, firstFlowDate.plusDays(1));
+                            }
                         }
                     }
-                }
-                if (adjPeriodStartValueExcl.compareTo(ZERO) == 0) {
-                    if (adjPeriodFlows.isEmpty()) {
-                        if (periodEndValueIncl.compareTo(ZERO) == 0) {
-                            periodTwr = ZERO;
+                    PerfCalcRequest periodPerfCalcReq;
+                    if (adjPeriodStartValueExcl.compareTo(ZERO) == 0) {
+                        if (adjPeriodFlows.isEmpty()) {
+                            if (periodEndValueIncl.compareTo(ZERO) == 0) {
+                                periodTwr = ZERO;
+                            } else {
+                                throw new IllegalArgumentException("if periodStartValueExcl is zero and periodFlows is empty, then periodEndValueIncl must be zero; given: %s"
+                                        .formatted(periodEndValueIncl));
+                            }
                         } else {
-                            throw new IllegalArgumentException("if periodStartValueExcl is zero and periodFlows is empty, then periodEndValueIncl must be zero; given: %s"
-                                    .formatted(periodEndValueIncl));
+                            LocalDate adjPeriodStartDateIncl;
+                            adjPeriodStartDateIncl = switch (twrFlowTiming) {
+                                case BEGINNING_OF_DAY -> adjPeriodFlows.firstKey();
+                                case END_OF_DAY -> adjPeriodFlows.firstKey().plusDays(1);
+                            };
+                            periodPerfCalcReq = PerfCalcRequest.builder()
+                                    .startDateIncl(adjPeriodStartDateIncl)
+                                    .endDateIncl(periodEndDateIncl)
+                                    .startAssetValueExcl(periodStartValueExcl)
+                                    .endAssetValueIncl(periodEndValueIncl)
+                                    .flows(adjPeriodFlows)
+                                    .assetValues(assetValues)
+                                    .flowTiming(twrFlowTiming)
+                                    .annualization(DO_NOT_ANNUALIZE)
+                                    .calcScale(calcScale)
+                                    .resultScale(calcScale)
+                                    .roundingMode(roundingMode)
+                                    .build();
+                            periodTwr = twrCalculator.calculateReturn(periodPerfCalcReq);
                         }
-                        periodPerfCalcReq = null;
                     } else {
-                        LocalDate adjPeriodStartDateIncl;
-                        adjPeriodStartDateIncl = switch (flowTiming) {
-                            case BEGINNING_OF_DAY -> adjPeriodFlows.firstKey();
-                            case END_OF_DAY -> adjPeriodFlows.firstKey().plusDays(1);
-                        };
                         periodPerfCalcReq = PerfCalcRequest.builder()
-                                .startDateIncl(adjPeriodStartDateIncl)
+                                .startDateIncl(periodStartDateIncl)
                                 .endDateIncl(periodEndDateIncl)
                                 .startAssetValueExcl(periodStartValueExcl)
                                 .endAssetValueIncl(periodEndValueIncl)
-                                .flows(adjPeriodFlows)
+                                .flows(periodFlows)
                                 .assetValues(assetValues)
-                                .flowTiming(flowTiming)
+                                .flowTiming(twrFlowTiming)
                                 .annualization(DO_NOT_ANNUALIZE)
                                 .calcScale(calcScale)
                                 .resultScale(calcScale)
@@ -180,37 +196,12 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                                 .build();
                         periodTwr = twrCalculator.calculateReturn(periodPerfCalcReq);
                     }
-                } else {
-                    periodPerfCalcReq = PerfCalcRequest.builder()
-                            .startDateIncl(periodStartDateIncl)
-                            .endDateIncl(periodEndDateIncl)
-                            .startAssetValueExcl(periodStartValueExcl)
-                            .endAssetValueIncl(periodEndValueIncl)
-                            .flows(periodFlows)
-                            .assetValues(assetValues)
-                            .flowTiming(flowTiming)
-                            .annualization(DO_NOT_ANNUALIZE)
-                            .calcScale(calcScale)
-                            .resultScale(calcScale)
-                            .roundingMode(roundingMode)
-                            .build();
-                    periodTwr = twrCalculator.calculateReturn(periodPerfCalcReq);
                 }
 
                 BigDecimal periodTwrFactor = periodTwr.add(ONE);
                 cumulTwrFactor = cumulTwrFactor.multiply(periodTwrFactor).setScale(calcScale, roundingMode);
                 BigDecimal annTwrFactor = annualizeGrowthFactor(ANNUALIZE_IF_OVER_ONE_YEAR, cumulTwrFactor, calcStartDateIncl, periodEndDateIncl);
 
-                BigDecimal periodMwr;
-                if (req.calculatePeriodMwr()) {
-                    if (adjPeriodFlows.isEmpty()) {
-                        periodMwr = periodTwr;
-                    } else {
-                        periodMwr = mwrCalculator.calculateReturn(periodPerfCalcReq);
-                    }
-                } else {
-                    periodMwr = null;
-                }
                 BigDecimal cumulMwr;
                 BigDecimal annMwr;
                 if (req.calculateMwr()) {
@@ -226,7 +217,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                                     .endAssetValueIncl(periodEndValueIncl)
                                     .flows(flows)
                                     .assetValues(assetValues)
-                                    .flowTiming(flowTiming)
+                                    .flowTiming(mwrFlowTiming)
                                     .annualization(DO_NOT_ANNUALIZE)
                                     .calcScale(calcScale)
                                     .resultScale(calcScale)
@@ -241,7 +232,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                                 .endAssetValueIncl(periodEndValueIncl)
                                 .flows(flows)
                                 .assetValues(assetValues)
-                                .flowTiming(flowTiming)
+                                .flowTiming(mwrFlowTiming)
                                 .annualization(DO_NOT_ANNUALIZE)
                                 .calcScale(calcScale)
                                 .resultScale(calcScale)
@@ -262,7 +253,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 BigDecimal trailingAvgProfit1Y;
                 if (calculateTrailingAvgProfit1Y) {
                     trailingProfits1Y.put(periodStartDateIncl, periodProfit);
-                    trailingAvgProfit1Y = Num.avg(trailingProfits1Y.values(), resultScale, roundingMode);
+                    trailingAvgProfit1Y = Num.avg(trailingProfits1Y.values(), resultAmountScale, roundingMode);
                 } else {
                     trailingAvgProfit1Y = null;
                 }
@@ -270,7 +261,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                 BigDecimal trailingAvgFlow1Y;
                 if (calculateTrailingAvgFlow1Y) {
                     trailingFlows1Y.put(periodStartDateIncl, periodFlowSum);
-                    trailingAvgFlow1Y = Num.avg(trailingFlows1Y.values(), resultScale, roundingMode);
+                    trailingAvgFlow1Y = Num.avg(trailingFlows1Y.values(), resultAmountScale, roundingMode);
                 } else {
                     trailingAvgFlow1Y = null;
                 }
@@ -282,7 +273,7 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                     periodIncomeSum = periodIncomes.values().stream().reduce(ZERO, BigDecimal::add);
                     if (calculateTrailingAvgIncome1Y) {
                         trailingIncomes1Y.put(periodStartDateIncl, periodIncomeSum);
-                        trailingAvgIncome1Y = Num.avg(trailingIncomes1Y.values(), resultScale, roundingMode);
+                        trailingAvgIncome1Y = Num.avg(trailingIncomes1Y.values(), resultAmountScale, roundingMode);
                     } else {
                         trailingAvgIncome1Y = null;
                     }
@@ -368,27 +359,26 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
                         .periodStartDateIncl(periodStartDateIncl)
                         .periodEndDateIncl(periodEndDateIncl)
                         .periodCaption(periodCaption)
-                        .periodStartAssetValueExcl(periodStartValueExcl)
-                        .periodEndAssetValueIncl(periodEndValueIncl)
-                        .periodFlow(periodFlowSum)
-                        .periodTwr(toPctAndScale(periodTwr, resultRatesInPct, resultScale, roundingMode))
-                        .cumulativeTwr(toPctAndScale(cumulTwrFactor.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .annualizedTwr(toPctAndScale(annTwrFactor.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .periodMwr(toPctAndScale(periodMwr, resultRatesInPct, resultScale, roundingMode))
-                        .cumulativeMwr(toPctAndScale(cumulMwr, resultRatesInPct, resultScale, roundingMode))
-                        .annualizedMwr(toPctAndScale(annMwr, resultRatesInPct, resultScale, roundingMode))
-                        .totalContribution(totalContribution)
-                        .periodProfit(periodProfit)
-                        .totalProfit(totalProfit)
+                        .periodStartAssetValueExcl(Num.setScale(periodStartValueExcl, resultAmountScale, roundingMode))
+                        .periodEndAssetValueIncl(Num.setScale(periodEndValueIncl, resultAmountScale, roundingMode))
+                        .periodFlow(Num.setScale(periodFlowSum, resultAmountScale, roundingMode))
+                        .periodTwr(toPctAndScale(periodTwr, resultRatesInPct, resultRateScale, roundingMode))
+                        .cumulativeTwr(toPctAndScale(cumulTwrFactor.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .annualizedTwr(toPctAndScale(annTwrFactor.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .cumulativeMwr(toPctAndScale(cumulMwr, resultRatesInPct, resultRateScale, roundingMode))
+                        .annualizedMwr(toPctAndScale(annMwr, resultRatesInPct, resultRateScale, roundingMode))
+                        .totalContribution(Num.setScale(totalContribution, resultAmountScale, roundingMode))
+                        .periodProfit(Num.setScale(periodProfit, resultAmountScale, roundingMode))
+                        .totalProfit(Num.setScale(totalProfit, resultAmountScale, roundingMode))
                         .trailingAvgProfit1Y(trailingAvgProfit1Y)
                         .trailingAvgFlow1Y(trailingAvgFlow1Y)
-                        .periodIncome(periodIncomeSum)
+                        .periodIncome(Num.setScale(periodIncomeSum, resultAmountScale, roundingMode))
                         .trailingAvgIncome1Y(trailingAvgIncome1Y)
-                        .trailingTwr1Y(toPctAndScale(trailTwrFactor1Y == null ? null : trailTwrFactor1Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .trailingTwr2Y(toPctAndScale(trailTwrFactor2Y == null ? null : trailTwrFactor2Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .trailingTwr3Y(toPctAndScale(trailTwrFactor3Y == null ? null : trailTwrFactor3Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .trailingTwr5Y(toPctAndScale(trailTwrFactor5Y == null ? null : trailTwrFactor5Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
-                        .trailingTwr10Y(toPctAndScale(trailTwrFactor10Y == null ? null : trailTwrFactor10Y.subtract(ONE), resultRatesInPct, resultScale, roundingMode))
+                        .trailingTwr1Y(toPctAndScale(trailTwrFactor1Y == null ? null : trailTwrFactor1Y.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .trailingTwr2Y(toPctAndScale(trailTwrFactor2Y == null ? null : trailTwrFactor2Y.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .trailingTwr3Y(toPctAndScale(trailTwrFactor3Y == null ? null : trailTwrFactor3Y.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .trailingTwr5Y(toPctAndScale(trailTwrFactor5Y == null ? null : trailTwrFactor5Y.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
+                        .trailingTwr10Y(toPctAndScale(trailTwrFactor10Y == null ? null : trailTwrFactor10Y.subtract(ONE), resultRatesInPct, resultRateScale, roundingMode))
                         .build());
 
                 //For the next iteration

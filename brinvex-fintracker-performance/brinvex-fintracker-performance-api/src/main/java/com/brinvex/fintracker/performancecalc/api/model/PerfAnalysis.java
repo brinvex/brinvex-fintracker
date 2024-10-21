@@ -17,7 +17,6 @@ import java.time.LocalDate;
  * @param periodTwr                 Non-Annualized Time-Weighted Return for this sub-period
  * @param cumulativeTwr             Cumulative Time-Weighted Return up to and including this sub-period
  * @param annualizedTwr             Annualized Time-Weighted Return up to and including this sub-period
- * @param periodMwr                 Non-Annualized Money-Weighted Return for this sub-period
  * @param cumulativeMwr             Cumulative Money-Weighted Return up to and including this sub-period
  * @param annualizedMwr             Annualized Money-Weighted Return up to and including this sub-period
  * @param totalContribution         The sum of the initial asset value and all subsequent cash flows up to and including this sub-period.
@@ -46,7 +45,6 @@ public record PerfAnalysis(
         BigDecimal periodTwr,
         BigDecimal cumulativeTwr,
         BigDecimal annualizedTwr,
-        BigDecimal periodMwr,
         BigDecimal cumulativeMwr,
         BigDecimal annualizedMwr,
         BigDecimal totalContribution,

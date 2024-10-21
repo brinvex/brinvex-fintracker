@@ -99,6 +99,7 @@ assertEquals("0.0100004877", twrReturn.toPlainString());
 #### Resources for learning more about Investment Performance Calculation
 
 https://canadianportfoliomanagerblog.com/calculating-your-modified-dietz-rate-of-return  
+https://www.interactivebrokers.com/images/common/Statements/MWR-TWR_white_paper.pdf  
 https://en.wikipedia.org/wiki/Modified_Dietz_method  
 https://en.wikipedia.org/wiki/Time-weighted_return  
 https://www.gipsstandards.org  
@@ -188,7 +189,7 @@ you can include only the ``performance-api`` and ``performance-impl`` dependenci
 If you need integration with IBKR, import the ``connector-ibkr-api`` and ``connector-ibkr-impl`` dependencies.
 
     <properties>
-         <brinvex-fintracker.version>0.0.32</brinvex-fintracker.version>
+         <brinvex-fintracker.version>0.0.33</brinvex-fintracker.version>
     </properties>
     
     <repository>

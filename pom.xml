@@ -18,7 +18,7 @@
 
     <groupId>com.brinvex.fintracker</groupId>
     <artifactId>brinvex-fintracker</artifactId>
-    <version>0.0.32</version>
+    <version>0.0.33</version>
     <packaging>pom</packaging>
 
     <name>brinvex-fintracker</name>
@@ -39,7 +39,7 @@
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
-        <brinvex-util-dms.version>1.0.8</brinvex-util-dms.version>
+        <brinvex-util-dms.version>1.0.10</brinvex-util-dms.version>
         <brinvex-util-java.version>1.57.9</brinvex-util-java.version>
 
         <github-site-maven-plugin.version>0.11</github-site-maven-plugin.version>

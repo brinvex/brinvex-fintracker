@@ -3,6 +3,7 @@ package com.brinvex.fintracker.test.support;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,8 @@ public class CollectionStringUtil {
             sb.append(lineSeparator);
         }
         {
-            for (List<String> itemStrings : itemColumnStrings.values()) {
+            for (Iterator<List<String>> lineIter = itemColumnStrings.values().iterator(); lineIter.hasNext(); ) {
+                List<String> itemStrings = lineIter.next();
                 StringBuilder line = new StringBuilder();
                 for (int c = 0; c < colCount; c++) {
                     if (c != 0) {
