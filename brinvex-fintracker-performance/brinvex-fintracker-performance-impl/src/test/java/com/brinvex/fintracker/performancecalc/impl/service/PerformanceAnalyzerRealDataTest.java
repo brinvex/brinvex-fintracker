@@ -67,7 +67,7 @@ public class PerformanceAnalyzerRealDataTest {
     }
 
     @Test
-    void ptf11() {
+    void ptf11_1() {
         List<DateAmount> flows = dms.getTextLines("ptf11", "ptf11_flows.txt")
                 .stream()
                 .filter(not(String::isBlank))
@@ -128,7 +128,72 @@ public class PerformanceAnalyzerRealDataTest {
                     .calculateMwr(true)
                     .build();
             SequencedCollection<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(perfAnalysisReq);
-            String expectedResultFileName = "ptf11_perfAnalysesResult_%s.txt".formatted(endDateIncl);
+            String expectedResultFileName = "ptf11_perfAnalysesResult_%s_%s.txt".formatted(eurFlowsStartDate, endDateIncl);
+            LOG.debug("expectedResultFileName={}", expectedResultFileName);
+            String expected = dms.getTextContent("ptf11", expectedResultFileName);
+            String actual = perfAnalysesToGridString(perfAnalyses);
+            assertEqualsWithMultilineMsg(expected, actual);
+        }
+    }
+
+    @Test
+    void ptf11_2() {
+        List<DateAmount> flows = dms.getTextLines("ptf11", "ptf11_flows.txt")
+                .stream()
+                .filter(not(String::isBlank))
+                .map(line -> line.split(","))
+                .map(lineParts -> new DateAmount(lineParts[0], lineParts[1]))
+                .toList();
+        TreeMap<LocalDate, BigDecimal> assetValues = dms.getTextLines("ptf11", "ptf11_assetValues.txt")
+                .stream()
+                .filter(not(String::isBlank))
+                .map(line -> {
+                    String[] lineParts = line.split(",");
+                    return new DateAmount(lineParts[0], lineParts[1]);
+                })
+                .collect(toTreeMap(DateAmount::date, DateAmount::amount));
+
+        //the last USD flow occurred on Friday 2023-10-13
+        LocalDate eurFlowsStartDate = LocalDate.parse("2023-10-17");
+
+        List<DateAmount> eurFlows = flows
+                .stream()
+                .filter(da -> !da.date().isBefore(eurFlowsStartDate))
+                .toList();
+
+        List<LocalDate> startDates = List.of(
+                parse("2023-10-17"),
+                parse("2023-10-18"),
+                parse("2023-11-01"),
+                parse("2023-12-01"),
+                parse("2023-12-29"),
+                //Don't know why but our calculated cumMwr is slightly different from the one presented by IBKR
+                //parse("2024-01-01"),
+                //parse("2024-02-12"),
+                parse("2024-02-20"),
+                parse("2024-02-28"),
+                parse("2024-02-29"),
+                parse("2024-03-01")
+        );
+
+        LocalDate endDateIncl = parse("2024-10-18");
+        for (LocalDate startDate : startDates) {
+            PerfAnalysisRequest perfAnalysisReq = PerfAnalysisRequest.builder()
+                    .analysisStartDateIncl(startDate)
+                    .analysisEndDateIncl(endDateIncl)
+                    .flows(eurFlows)
+                    .assetValues(date -> assetValues.floorEntry(date).getValue())
+                    .twrFlowTiming(BEGINNING_OF_DAY)
+                    .mwrFlowTiming(END_OF_DAY)
+                    .twrCalculatorType(TrueTwrCalculator.class)
+                    .mwrCalculatorType(MwrCalculator.class)
+                    .calcScale(20)
+                    .resultScale(2)
+                    .resultRatesInPercent(true)
+                    .calculateMwr(true)
+                    .build();
+            SequencedCollection<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(perfAnalysisReq);
+            String expectedResultFileName = "ptf11_perfAnalysesResult_%s_%s.txt".formatted(startDate, endDateIncl);
             LOG.debug("expectedResultFileName={}", expectedResultFileName);
             String expected = dms.getTextContent("ptf11", expectedResultFileName);
             String actual = perfAnalysesToGridString(perfAnalyses);
