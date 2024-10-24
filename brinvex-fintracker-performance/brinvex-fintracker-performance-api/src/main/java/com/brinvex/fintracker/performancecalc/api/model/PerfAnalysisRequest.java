@@ -18,9 +18,8 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static java.util.Collections.unmodifiableSortedMap;
 
 @Getter
 @Accessors(fluent = true)
@@ -31,7 +30,7 @@ public final class PerfAnalysisRequest {
     private final LocalDate investmentStartDateIncl;
     private final LocalDate investmentEndDateIncl;
     private final Function<LocalDate, BigDecimal> assetValues;
-    private final SortedMap<LocalDate, BigDecimal> flows;
+    private final BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> flows;
     private final FlowTiming twrFlowTiming;
     private final FlowTiming mwrFlowTiming;
     private final Class<? extends TwrCalculator> twrCalculatorType;
@@ -47,13 +46,14 @@ public final class PerfAnalysisRequest {
     private final boolean calculateTrailingAvgFlow1Y;
     private final boolean calculatePeriodIncome;
     private final boolean calculateTrailingAvgIncome1Y;
-    private final SortedMap<LocalDate, BigDecimal> incomes;
+    private final BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> incomes;
     private final boolean calculateTrailingTwr1Y;
     private final boolean calculateTrailingTwr2Y;
     private final boolean calculateTrailingTwr3Y;
     private final boolean calculateTrailingTwr5Y;
     private final boolean calculateTrailingTwr10Y;
 
+    @SuppressWarnings("ReplaceNullCheck")
     private PerfAnalysisRequest(
             PeriodUnit resultPeriodUnit,
             LocalDate analysisStartDateIncl,
@@ -61,6 +61,7 @@ public final class PerfAnalysisRequest {
             Function<LocalDate, BigDecimal> assetValuesProvider,
             Map<LocalDate, BigDecimal> assetValuesMap,
             Collection<DateAmount> assetValuesCollection,
+            BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> flowsProvider,
             Map<LocalDate, BigDecimal> flowsMap,
             Collection<DateAmount> flowsCollection,
             Class<? extends TwrCalculator> twrCalculatorType,
@@ -78,6 +79,7 @@ public final class PerfAnalysisRequest {
             Boolean calculateTrailingAvgFlow1Y,
             Boolean calculatePeriodIncome,
             Boolean calculateTrailingAvgIncome1Y,
+            BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> incomesProvider,
             Map<LocalDate, BigDecimal> incomesMap,
             Collection<DateAmount> incomesCollection,
             Boolean calculateTrailingTwr1Y,
@@ -136,26 +138,34 @@ public final class PerfAnalysisRequest {
                 endDateIncl
         );
 
-        this.flows = unmodifiableSortedMap(PerfCalcRequest.sanitizeFlows(
-                flowsMap,
-                flowsCollection,
-                startDateIncl,
-                endDateIncl
-        ));
+        if (flowsProvider != null) {
+            this.flows = flowsProvider;
+        } else {
+            this.flows = (_, _) -> PerfCalcRequest.sanitizeFlows(
+                    flowsMap,
+                    flowsCollection,
+                    startDateIncl,
+                    endDateIncl
+            );
+        }
 
         if (this.calculatePeriodIncome || this.calculateTrailingAvgIncome1Y) {
-            if (incomesMap == null && incomesCollection == null) {
+            if (incomesProvider == null && incomesMap == null && incomesCollection == null) {
                 throw new IllegalArgumentException((
                         "if calculatePeriodIncome or calculateTrailingAvgIncome1Y is true, then incomes must not be null, given: %s, %s")
                         .formatted(this.calculatePeriodIncome, this.calculateTrailingAvgIncome1Y)
                 );
             }
-            this.incomes = unmodifiableSortedMap(PerfCalcRequest.sanitizeFlows(
-                    incomesMap,
-                    incomesCollection,
-                    startDateIncl,
-                    endDateIncl
-            ));
+            if (incomesProvider != null) {
+                this.incomes = incomesProvider;
+            } else {
+                this.incomes = (_, _) -> PerfCalcRequest.sanitizeFlows(
+                        incomesMap,
+                        incomesCollection,
+                        startDateIncl,
+                        endDateIncl
+                );
+            }
         } else {
             this.incomes = null;
         }
@@ -180,9 +190,13 @@ public final class PerfAnalysisRequest {
         @Setter(AccessLevel.NONE)
         private Collection<DateAmount> assetValuesCollection;
         @Setter(AccessLevel.NONE)
+        private BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> flowsProvider;
+        @Setter(AccessLevel.NONE)
         private Map<LocalDate, BigDecimal> flowsMap;
         @Setter(AccessLevel.NONE)
         private Collection<DateAmount> flowsCollection;
+        @Setter(AccessLevel.NONE)
+        private BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> incomesProvider;
         @Setter(AccessLevel.NONE)
         private Map<LocalDate, BigDecimal> incomesMap;
         @Setter(AccessLevel.NONE)
@@ -248,30 +262,50 @@ public final class PerfAnalysisRequest {
         }
 
         @Tolerate
-        public PerfAnalysisRequestBuilder flows(Map<LocalDate, BigDecimal> flows) {
+        public PerfAnalysisRequestBuilder flows(BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> flows) {
+            this.flowsProvider = flows;
+            this.flowsMap = null;
             this.flowsCollection = null;
+            return this;
+        }
+
+        @Tolerate
+        public PerfAnalysisRequestBuilder flows(Map<LocalDate, BigDecimal> flows) {
+            this.flowsProvider = null;
             this.flowsMap = flows;
+            this.flowsCollection = null;
             return this;
         }
 
         @Tolerate
         public PerfAnalysisRequestBuilder flows(Collection<DateAmount> flows) {
+            this.flowsProvider = null;
             this.flowsMap = null;
             this.flowsCollection = flows;
             return this;
         }
 
         @Tolerate
-        public PerfAnalysisRequestBuilder incomes(Map<LocalDate, BigDecimal> incomesMap) {
-            this.incomesMap = incomesMap;
+        public PerfAnalysisRequestBuilder incomes(BiFunction<LocalDate, LocalDate, SortedMap<LocalDate, BigDecimal>> flows) {
+            this.incomesProvider = flows;
+            this.incomesMap = null;
             this.incomesCollection = null;
             return this;
         }
 
         @Tolerate
-        public PerfAnalysisRequestBuilder incomes(Collection<DateAmount> incomesCollection) {
+        public PerfAnalysisRequestBuilder incomes(Map<LocalDate, BigDecimal> incomes) {
+            this.incomesProvider = null;
+            this.incomesMap = incomes;
+            this.incomesCollection = null;
+            return this;
+        }
+
+        @Tolerate
+        public PerfAnalysisRequestBuilder incomes(Collection<DateAmount> incomes) {
+            this.incomesProvider = null;
             this.incomesMap = null;
-            this.incomesCollection = incomesCollection;
+            this.incomesCollection = incomes;
             return this;
         }
 
@@ -285,6 +319,7 @@ public final class PerfAnalysisRequest {
                     assetValuesProvider,
                     assetValuesMap,
                     assetValuesCollection,
+                    flowsProvider,
                     flowsMap,
                     flowsCollection,
                     twrCalculatorType,
@@ -302,6 +337,7 @@ public final class PerfAnalysisRequest {
                     calculateTrailingAvgFlow1Y,
                     calculatePeriodIncome,
                     calculateTrailingAvgIncome1Y,
+                    incomesProvider,
                     incomesMap,
                     incomesCollection,
                     calculateTrailingTwr1Y,

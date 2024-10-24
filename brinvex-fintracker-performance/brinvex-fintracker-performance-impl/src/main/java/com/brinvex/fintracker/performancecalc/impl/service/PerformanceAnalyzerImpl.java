@@ -16,11 +16,13 @@ import com.brinvex.util.java.validation.Validate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.SequencedCollection;
 import java.util.SequencedMap;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import static com.brinvex.fintracker.performancecalc.api.model.AnnualizationOption.ANNUALIZE_IF_OVER_ONE_YEAR;
@@ -29,11 +31,14 @@ import static com.brinvex.fintracker.performancecalc.api.model.FlowTiming.BEGINN
 import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeGrowthFactor;
 import static com.brinvex.fintracker.performancecalc.impl.service.AnnualizationUtil.annualizeReturn;
 import static com.brinvex.util.java.CollectionUtil.rangeSafeHeadMap;
+import static com.brinvex.util.java.CollectionUtil.rangeSafeSubMap;
 import static com.brinvex.util.java.CollectionUtil.rangeSafeTailMap;
 import static com.brinvex.util.java.DateUtil.maxDate;
 import static com.brinvex.util.java.DateUtil.minDate;
+import static com.brinvex.util.java.NullUtil.nullSafe;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptySortedMap;
 
 @SuppressWarnings("DuplicatedCode")
 public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
@@ -73,14 +78,27 @@ public class PerformanceAnalyzerImpl implements PerformanceAnalyzer {
         boolean calculateTrailingTwr3Y = req.calculateTrailingTwr3Y();
         boolean calculateTrailingTwr5Y = req.calculateTrailingTwr5Y();
         boolean calculateTrailingTwr10Y = req.calculateTrailingTwr10Y();
-        SortedMap<LocalDate, BigDecimal> flows = req.flows();
         Function<LocalDate, BigDecimal> assetValues = req.assetValues();
-        SortedMap<LocalDate, BigDecimal> incomes = req.incomes();
 
         LocalDate calcStartDateIncl = maxDate(analysisStartDateIncl, req.investmentStartDateIncl());
         LocalDate calcStartDateExcl = calcStartDateIncl.minusDays(1);
         LocalDate calcEndDateIncl = minDate(analysisEndDateIncl, req.investmentEndDateIncl());
         LocalDate calcEndDateExcl = calcEndDateIncl.plusDays(1);
+
+        SortedMap<LocalDate, BigDecimal> flows = req.flows().apply(calcStartDateIncl, calcEndDateIncl);
+        if (flows == null) {
+            flows = emptySortedMap();
+        } else if (!flows.isEmpty()) {
+            Validate.isTrue(!flows.firstKey().isBefore(calcStartDateIncl));
+            Validate.isTrue(!flows.lastKey().isAfter(calcEndDateIncl));
+        }
+        SortedMap<LocalDate, BigDecimal> incomes = nullSafe(req.incomes(), _incomes -> _incomes.apply(calcStartDateExcl, calcEndDateExcl));
+        if (incomes == null) {
+            incomes = emptySortedMap();
+        } else if (!incomes.isEmpty()) {
+            Validate.isTrue(!incomes.firstKey().isBefore(calcStartDateExcl));
+            Validate.isTrue(!incomes.lastKey().isAfter(calcEndDateExcl));
+        }
 
         SequencedMap<String, PerfAnalysis> results = new LinkedHashMap<>();
 

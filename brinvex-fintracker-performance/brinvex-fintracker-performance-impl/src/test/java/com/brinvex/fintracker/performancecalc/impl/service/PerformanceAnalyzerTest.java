@@ -862,4 +862,59 @@ public class PerformanceAnalyzerTest {
         assertEqualsWithMultilineMsg(expected, actual);
     }
 
+    @Test
+    void analyzePerformance20() {
+        SequencedCollection<PerfAnalysis> perfAnalyses = perfAnalyzer.analyzePerformance(PerfAnalysisRequest.builder()
+                .analysisStartDateIncl(parse("2023-01-01"))
+                .analysisEndDateIncl(parse("2024-03-31"))
+                .investmentStartDateIncl(parse("2023-08-01"))
+                .investmentEndDateIncl(now())
+                .assetValues(List.of(
+                        new DateAmount("2022-12-31", "0"),
+                        new DateAmount("2023-01-31", "0"),
+                        new DateAmount("2023-02-28", "0"),
+                        new DateAmount("2023-03-31", "0"),
+                        new DateAmount("2023-04-30", "0"),
+                        new DateAmount("2023-05-31", "0"),
+                        new DateAmount("2023-06-30", "0"),
+                        new DateAmount("2023-07-31", "0"),
+                        new DateAmount("2023-08-31", "0"),
+                        new DateAmount("2023-09-30", "0"),
+                        new DateAmount("2023-10-31", "0"),
+                        new DateAmount("2023-11-30", "0"),
+                        new DateAmount("2023-12-31", "0"),
+                        new DateAmount("2024-01-31", "1100"),
+                        new DateAmount("2024-02-29", "1100"),
+                        new DateAmount("2024-03-31", "1100")
+                ))
+                .flows((_, _) -> new TreeMap<>(Map.of(parse("2024-01-01"), new BigDecimal("1000"))))
+                .twrFlowTiming(BEGINNING_OF_DAY)
+                .twrCalculatorType(LinkedModifiedDietzTwrCalculator.class)
+                .resultRatesInPercent(true)
+                .resultRateScale(2)
+                .resultAmountScale(0)
+                .calculateMwr(true)
+                .build());
+        String expected = """
+                 period; startVal; endVal; prdFlow; prdTwr; cumTwr; annTwr; cumMwr; annMwr; totContrib; prdProf; totProf; trlAvgProf1Y; trlAvgFlow1Y; prdIncm; trlAvgIncm1Y; trlTwr1Y; trlTwr2Y; trlTwr3Y; trlTwr5Y; trlTwr10Y
+                2023-01;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-02;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-03;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-04;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-05;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-06;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-07;     null;   null;    null;   null;   null;   null;   null;   null;       null;    null;    null;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-08;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-09;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-10;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-11;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2023-12;        0;      0;       0;   0.00;   0.00;   0.00;   0.00;   0.00;          0;       0;       0;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2024-01;        0;   1100;    1000;  10.00;  10.00;  10.00;  10.00;  10.00;       1000;     100;     100;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2024-02;     1100;   1100;       0;   0.00;  10.00;  10.00;  10.00;  10.00;       1000;       0;     100;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                2024-03;     1100;   1100;       0;   0.00;  10.00;  10.00;  10.00;  10.00;       1000;       0;     100;         null;         null;    null;         null;     null;     null;     null;     null;      null
+                """;
+        String actual = perfAnalysesToGridString(perfAnalyses);
+        assertEqualsWithMultilineMsg(expected, actual);
+    }
+
 }
