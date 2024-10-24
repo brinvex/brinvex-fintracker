@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.brinvex.fintracker</groupId>
         <artifactId>brinvex-fintracker-performance</artifactId>
-        <version>0.0.33</version>
+        <version>0.0.34</version>
     </parent>
 
     <artifactId>brinvex-fintracker-performance-api</artifactId>

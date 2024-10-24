@@ -24,33 +24,39 @@ public class ModifiedDietzMwrCalculatorImpl extends BaseCalculatorImpl implement
     protected BigDecimal calculateCumulativeReturn(PerfCalcRequest calcReq) {
         LocalDate startDateIncl = calcReq.startDateIncl();
         LocalDate endDateIncl = calcReq.endDateIncl();
+        LocalDate endDateExcl = endDateIncl.plusDays(1);
         BigDecimal startValueExcl = calcReq.startAssetValueExcl();
         BigDecimal endValueIncl = calcReq.endAssetValueIncl();
         SortedMap<LocalDate, BigDecimal> flows = calcReq.flows();
         FlowTiming flowTiming = calcReq.flowTiming();
         int calcScale = calcReq.calcScale();
         RoundingMode roundingMode = calcReq.roundingMode();
-        BigDecimal totalDays = new BigDecimal(DAYS.between(startDateIncl, endDateIncl) + 1);
+        int totalDays = toIntExact(DAYS.between(startDateIncl, endDateExcl));
+        BigDecimal totalDaysDecimal = new BigDecimal(totalDays);
 
         BigDecimal flowSum = ZERO;
         BigDecimal weightedFlowSum = ZERO;
-        for (Entry<LocalDate, BigDecimal> cashFlow : flows.entrySet()) {
-            LocalDate flowDate = cashFlow.getKey();
-            BigDecimal flowValue = cashFlow.getValue();
-            Validate.isTrue(!flowDate.isBefore(startDateIncl), () -> "flowDate must not be before startDateIncl, given: %s, %s"
-                    .formatted(flowDate, startDateIncl));
-            Validate.isTrue(!flowDate.isAfter(endDateIncl), () -> "flowDate must not be after endDateIncl, given: %s, %s"
-                    .formatted(flowDate, endDateIncl));
+        int flowTimingWeightAdjuster = switch (flowTiming) {
+            case BEGINNING_OF_DAY -> 0;
+            case END_OF_DAY -> -1;
+        };
+        for (Entry<LocalDate, BigDecimal> flow : flows.entrySet()) {
+            LocalDate flowDate = flow.getKey();
+            BigDecimal flowValue = flow.getValue();
 
-            int cashFlowLagInDays = toIntExact(DAYS.between(startDateIncl, flowDate)) + switch (flowTiming) {
-                case BEGINNING_OF_DAY -> 0;
-                case END_OF_DAY -> 1;
-            };
-            BigDecimal weight = ONE.subtract(new BigDecimal(cashFlowLagInDays).divide(totalDays, calcScale, roundingMode));
-            BigDecimal weightedCashFlowValue = flowValue.multiply(weight);
+            int weightNumerator = toIntExact(DAYS.between(flowDate, endDateExcl)) + flowTimingWeightAdjuster;
+            if (weightNumerator >= totalDays || weightNumerator <= 0) {
+                throw new IllegalArgumentException((
+                        "flowDate out of range; " +
+                        "given: flowDate=%s, startDateIncl=%s, endDateIncl=%s, flowTiming=%s, weightNumerator=%s, totalDays=%s")
+                        .formatted(flowDate, startDateIncl, endDateIncl, flowTiming, weightNumerator, totalDays));
+            }
+
+            BigDecimal weight = new BigDecimal(weightNumerator).divide(totalDaysDecimal, calcScale, roundingMode);
+            BigDecimal weightedFlowValue = flowValue.multiply(weight);
 
             flowSum = flowSum.add(flowValue);
-            weightedFlowSum = weightedFlowSum.add(weightedCashFlowValue);
+            weightedFlowSum = weightedFlowSum.add(weightedFlowValue);
         }
         if (startValueExcl.compareTo(weightedFlowSum.negate()) <= 0) {
             //See https://en.wikipedia.org/wiki/Modified_Dietz_method#Negative_or_zero_average_capital
