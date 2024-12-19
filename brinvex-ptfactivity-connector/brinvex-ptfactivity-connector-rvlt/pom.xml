@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.brinvex</groupId>
         <artifactId>brinvex-ptfactivity-connector</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>brinvex-ptfactivity-connector-rvlt</artifactId>

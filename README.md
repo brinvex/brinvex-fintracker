@@ -18,7 +18,7 @@ you can include only the ``performance-api`` and ``performance-impl`` dependenci
 If you need integration with IBKR, import the ``connector-ibkr-api`` and ``connector-ibkr-impl`` dependencies.
 
     <properties>
-         <brinvex-ptfactivity.version>1.0.0</brinvex-ptfactivity.version>
+         <brinvex-ptfactivity.version>1.0.1</brinvex-ptfactivity.version>
     </properties>
     
     <repository>
