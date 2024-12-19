@@ -14,7 +14,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <!-- todo 3 - Make brinvex-ptfactivity JPMS compliant, requires hibernate-validator 9+. Start with tests in ibkr module. -->
-        <version>3.4.0</version>
+        <version>3.4.1</version>
     </parent>
 
     <groupId>com.brinvex</groupId>
